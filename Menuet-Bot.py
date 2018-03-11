@@ -13,6 +13,7 @@ from flask import request
 from flask import make_response
 
 app = Flask(__name__)
+import requests
 
 
 @app.route('/', methods=['POST, GET'])
@@ -25,7 +26,6 @@ def webhook():
     req = request.get_json(silent=True, force=True)
 
     print("initial request" + str(req))
-    import requests
 
     print("imported req")
     url = "https://scorpa.ml/menuet/bot/webhook"
