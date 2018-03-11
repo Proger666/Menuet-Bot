@@ -26,8 +26,7 @@ def webhook():
     req = request.get_json(silent=True, force=True)
 
     print("initial request" + str(req))
-
-    print("imported req")
+    print("imported *************************************************************************************************req")
     url = "https://scorpa.ml/menuet/bot/webhook"
     r = requests.post(url, json.dumps(req), verify=False)
     print("reequests fetched this shit" + str(r))
