@@ -5,10 +5,6 @@ from future.standard_library import install_aliases
 
 install_aliases()
 
-from urllib.parse import urlparse, urlencode
-from urllib.request import urlopen, Request
-from urllib.error import HTTPError
-
 import json
 import os
 
@@ -28,13 +24,12 @@ def index():
 def webhook():
     req = request.get_json(silent=True, force=True)
 
-
     print("initial request" + str(req))
     import requests
 
     print("imported req")
     url = "https://scorpa.ml/menuet/bot/webhook"
-    r = requests.post(url, json.dumps(req))
+    r = requests.post(url, json.dumps(req), verify=False)
     print("reequests fetched this shit" + str(r))
     return r
     print("Request:")
@@ -46,6 +41,7 @@ def webhook():
     r = make_response(res)
     r.headers['Content-Type'] = 'application/json'
     return r
+
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
