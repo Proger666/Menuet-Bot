@@ -582,6 +582,25 @@ function makeEnv(r) {
 }
 scene.environment = makeEnv(renderer);
 
+/* room masks for point lights: every lamp lights only the room it stands in, so nothing leaks through walls
+   (even when the walls are cut away). Injected into the shared shader chunks, so it applies to every material. */
+const ROOM_CLIP = { value: [] };
+T.ShaderChunk.common += '\nvarying vec3 vRoomWP;\n';
+T.ShaderChunk.worldpos_vertex = T.ShaderChunk.worldpos_vertex.replace('worldPosition = modelMatrix * worldPosition;', 'worldPosition = modelMatrix * worldPosition;\n\tvRoomWP = worldPosition.xyz;');
+T.ShaderChunk.lights_pars_begin = T.ShaderChunk.lights_pars_begin.replace('uniform PointLight pointLights[ NUM_POINT_LIGHTS ];', [
+  'uniform PointLight pointLights[ NUM_POINT_LIGHTS ];',
+  'uniform vec4 uRoomClip[ NUM_POINT_LIGHTS ];',
+  'float roomMask( vec4 c, vec3 p ) {',
+  '\tif ( c.y - c.x < 0.001 ) return 1.0;',
+  '\tfloat d = min( min( p.x - c.x, c.y - p.x ), min( p.z - c.z, c.w - p.z ) );',
+  '\treturn smoothstep( -0.1, -0.02, d );',
+  '}',
+].join('\n'));
+T.ShaderChunk.lights_fragment_begin = T.ShaderChunk.lights_fragment_begin.replace('getPointDirectLightIrradiance( pointLight, geometry, directLight );',
+  'getPointDirectLightIrradiance( pointLight, geometry, directLight );\n\t\tdirectLight.color *= roomMask( uRoomClip[ i ], vRoomWP );');
+function withRoomClip(sh) { sh.uniforms.uRoomClip = ROOM_CLIP; }
+T.MeshStandardMaterial.prototype.onBeforeCompile = withRoomClip;
+
 const hemi = new T.HemisphereLight(lin('#fffaf2'), lin('#b8ab98'), 0.35);
 scene.add(hemi);
 const sun = new T.DirectionalLight(lin('#fff0dc'), 1.55);
@@ -826,6 +845,7 @@ function wallTex(id) { const k = 'w:' + id; if (!texCache[k]) texCache[k] = texW
 function worldUV(mat) {
   mat.dithering = true;
   mat.onBeforeCompile = (sh) => {
+    withRoomClip(sh);
     sh.vertexShader = 'varying float vWY;\n' + sh.vertexShader.replace('#include <begin_vertex>', [
       '#include <begin_vertex>',
       'vec4 wpUV = modelMatrix * vec4(transformed, 1.0);',
@@ -852,6 +872,7 @@ function floorShader(mat, rect) {
   mat.userData.refl = { value: .2 };
   mat.userData.room = { value: new T.Vector4(rect[0], rect[1], rect[2], rect[3]) };
   mat.onBeforeCompile = (sh) => {
+    withRoomClip(sh);
     sh.uniforms.tReflect = REFL.tReflect; sh.uniforms.uReflMatrix = REFL.uReflMatrix; sh.uniforms.uReflTexel = REFL.uReflTexel;
     sh.uniforms.uReflOn = REFL.uReflOn; sh.uniforms.uRefl = mat.userData.refl; sh.uniforms.uRoom = mat.userData.room;
     sh.vertexShader = 'uniform mat4 uReflMatrix;\nvarying vec4 vReflUv;\nvarying vec3 vWPosR;\n' + sh.vertexShader.replace('#include <begin_vertex>', [
@@ -3015,6 +3036,11 @@ const LIGHT_POOL = Array.from({ length: POOL_N }, (_, i) => {
   scene.add(L);
   return L;
 });
+ROOM_CLIP.value = LIGHT_POOL.map(() => new T.Vector4());
+function roomRectAt(x, z) {
+  for (const r of ROOMS) for (const q of r.rects) if (x > q[0] - .08 && x < q[1] + .08 && z > q[2] - .08 && z < q[3] + .08) return q;
+  return null;
+}
 let lightsDirty = true;
 const _lp = new T.Vector3();
 function lightPos(it) { return _lp.set(it.vx, it.vy + it.lift + it.def.light.y, it.vz); }
@@ -3046,14 +3072,16 @@ function assignLights() {
     if (P.userData.src && rest.has(P.userData.src)) rest.delete(P.userData.src); else { P.userData.src = null; free.push(P); }
   }
   for (const it of rest) setPoolSrc(free.shift(), it);
-  for (const P of LIGHT_POOL) {
-    const it = P.userData.src;
-    if (!it) { P.intensity = 0; continue; }
+  LIGHT_POOL.forEach((P, i) => {
+    const it = P.userData.src, clip = ROOM_CLIP.value[i];
+    if (!it) { P.intensity = 0; return; }
+    const q = roomRectAt(it.x, it.z);
+    if (q) clip.set(q[0], q[1], q[2], q[3]); else clip.set(0, 0, 0, 0);
     const p = lightPos(it);
     if (!P.position.equals(p)) { P.position.copy(p); if (P.castShadow) shadowDirty = true; }
     P.color.copy(it.lightColor); P.distance = it.def.light.dist; P.intensity = it.want;
     if (P.castShadow && P.shadow.camera.far !== it.def.light.dist) { P.shadow.camera.far = it.def.light.dist; P.shadow.camera.updateProjectionMatrix(); }
-  }
+  });
   // a faint warm fill, only as strong as the share of lamps that are on
   warmFill.intensity = .14 * nightK * (total ? Math.min(1, lit / total) : 0);
 }
