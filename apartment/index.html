@@ -842,13 +842,13 @@ function std(hex, rough = .7, metal = 0) { return new T.MeshStandardMaterial({ c
 /* ------------------------------------------------------------------ plan */
 // rooms are unions of rectangles [x1, x2, z1, z2]; rectangles of one room join without a wall
 const ROOMS = [
-  { id: 'hall', name: 'Коридор', rects: [[0, 2.0, -10.8, 0], [-1.6, 0, -2.6, 0]] },
-  { id: 'living', name: 'Гостиная', rects: [[2.0, 7.05, -5.5, 0]] },
-  { id: 'bed1', name: 'Малая спальня', rects: [[2.0, 7.05, -9.4, -5.5]] },
-  { id: 'kitchen', name: 'Кухня', rects: [[2.0, 7.05, -12.6, -9.4]] },
-  { id: 'bath', name: 'Ванная', rects: [[-1.0, 2.0, -13.6, -10.8]] },
-  { id: 'bed2', name: 'Спальня', rects: [[-6.2, 0, -10.8, -6.8]] },
-  { id: 'balcony', name: 'Балкон', rects: [[7.05, 8.65, -12.6, -9.6]] },
+  { id: 'hall', name: 'Коридор', rects: [[0, 1.6, -9.7, 0]] },
+  { id: 'living', name: 'Гостиная', rects: [[1.6, 6.2, -5.3, 0]] },
+  { id: 'bed1', name: 'Малая спальня', rects: [[1.6, 6.2, -8.6, -5.3]] },
+  { id: 'kitchen', name: 'Кухня', rects: [[1.6, 6.2, -11.1, -8.6]] },
+  { id: 'bath', name: 'Ванная', rects: [[-0.8, 1.6, -11.9, -9.7]] },
+  { id: 'bed2', name: 'Спальня', rects: [[-5.0, 0, -9.7, -6.4]] },
+  { id: 'balcony', name: 'Балкон', rects: [[6.2, 7.6, -11.1, -8.7]] },
 ];
 const ROOM = {};
 ROOMS.forEach((r) => {
@@ -860,21 +860,21 @@ ROOMS.forEach((r) => {
   r.area = r.rects.reduce((a, q) => a + (q[1] - q[0]) * (q[3] - q[2]), 0);
 });
 ROOM.outside = { id: 'outside', name: 'Фасад' };
-const BOUNDS = { x0: -6.4, x1: 8.9, z0: -13.8, z1: 0.3 };
+const BOUNDS = { x0: -5.2, x1: 7.8, z0: -12.1, z1: 0.3 };
 const CX = (BOUNDS.x0 + BOUNDS.x1) / 2, CZ = (BOUNDS.z0 + BOUNDS.z1) / 2;
 const H = 2.7, LOW = 0.3, TR = 0.06, TX = 0.14, RAIL = 1.05;
 const OPENINGS = [
-  { o: 'h', at: 0, from: 0.58, to: 1.38, type: 'entry', top: 2.1 },
-  { o: 'v', at: 2.0, from: -3.8, to: -2.4, type: 'door2', into: 'living', top: 2.2 },
-  { o: 'v', at: 2.0, from: -8.1, to: -7.2, type: 'door', into: 'bed1', hinge: 'to', top: 2.1 },
-  { o: 'v', at: 2.0, from: -10.45, to: -9.55, type: 'door', into: 'kitchen', hinge: 'to', top: 2.1 },
-  { o: 'h', at: -10.8, from: 0.15, to: 0.9, type: 'door', into: 'bath', hinge: 'from', top: 2.1 },
-  { o: 'v', at: 0, from: -10.45, to: -9.55, type: 'door', into: 'bed2', hinge: 'from', top: 2.1 },
-  { o: 'v', at: 7.05, from: -4.1, to: -1.6, type: 'window', bottom: .8, top: 2.3 },
-  { o: 'v', at: 7.05, from: -8.25, to: -6.65, type: 'window', bottom: .85, top: 2.25 },
-  { o: 'v', at: 7.05, from: -12.4, to: -11.6, type: 'bdoor', top: 2.2 },
-  { o: 'v', at: 7.05, from: -11.3, to: -9.8, type: 'window', bottom: .9, top: 2.25 },
-  { o: 'v', at: -6.2, from: -10.35, to: -8.65, type: 'window', bottom: .85, top: 2.25 },
+  { o: 'h', at: 0, from: 0.4, to: 1.2, type: 'entry', top: 2.1 },
+  { o: 'v', at: 1.6, from: -3.4, to: -2.0, type: 'door2', into: 'living', top: 2.2 },
+  { o: 'v', at: 1.6, from: -7.3, to: -6.4, type: 'door', into: 'bed1', hinge: 'to', top: 2.1 },
+  { o: 'v', at: 1.6, from: -9.55, to: -8.7, type: 'door', into: 'kitchen', hinge: 'to', top: 2.1 },
+  { o: 'h', at: -9.7, from: 0.1, to: 0.8, type: 'door', into: 'bath', hinge: 'from', top: 2.1 },
+  { o: 'v', at: 0, from: -9.55, to: -8.7, type: 'door', into: 'bed2', hinge: 'from', top: 2.1 },
+  { o: 'v', at: 6.2, from: -3.6, to: -1.4, type: 'window', bottom: .8, top: 2.3 },
+  { o: 'v', at: 6.2, from: -7.65, to: -6.25, type: 'window', bottom: .85, top: 2.25 },
+  { o: 'v', at: 6.2, from: -10.95, to: -10.15, type: 'bdoor', top: 2.2 },
+  { o: 'v', at: 6.2, from: -10.0, to: -8.8, type: 'window', bottom: .9, top: 2.25 },
+  { o: 'v', at: -5.0, from: -9.3, to: -7.8, type: 'window', bottom: .85, top: 2.25 },
 ];
 function roomAt(x, z) {
   for (const r of ROOMS) for (const q of r.rects) if (x > q[0] + 1e-6 && x < q[1] - 1e-6 && z > q[2] + 1e-6 && z < q[3] - 1e-6) return r.id;
@@ -1193,7 +1193,7 @@ const CATS = [
 ];
 function def(id, o) { DEFS[id] = Object.assign({ id, a: '#c9a77c', b: '#f3f1ec', la: 'Корпус', lb: 'Акцент' }, o); }
 
-def('sofa', { name: 'Диван', cat: 'living', w: 2.2, d: .95, h: .85, a: '#8e9aa6', b: '#c9a64a', la: 'Обивка', lb: 'Подушки', build(g, A, Bm, R, d) {
+def('sofa', { name: 'Диван', cat: 'living', w: 2.1, d: .9, h: .85, a: '#8e9aa6', b: '#c9a64a', la: 'Обивка', lb: 'Подушки', build(g, A, Bm, R, d) {
   const w = d.w, dp = d.d;
   legs4(g, w - .14, dp - .14, .1, SH.black);
   RB(g, w, .28, dp, 0, .1, 0, A, .04, 3);
@@ -1223,7 +1223,7 @@ def('cornerSofa', { name: 'Угловой диван', cat: 'living', w: 2.6, d:
   RB(g, .42, .38, .13, -w / 2 + .46, .52, z0 + .45, Bm, .07, 3).rotation.set(-.25, .3, .05);
   RB(g, .42, .38, .13, w / 2 - .5, .52, z0 + .45, Bm, .07, 3).rotation.set(-.25, -.2, -.05);
 } });
-def('armchair', { name: 'Кресло', cat: 'living', w: .9, d: .9, h: .85, a: '#a7735a', b: '#e9e4da', la: 'Обивка', lb: 'Подушка', build(g, A, Bm, R, d) {
+def('armchair', { name: 'Кресло', cat: 'living', w: .82, d: .82, h: .85, a: '#a7735a', b: '#e9e4da', la: 'Обивка', lb: 'Подушка', build(g, A, Bm, R, d) {
   const w = d.w, dp = d.d;
   legs4(g, w - .14, dp - .14, .1, SH.wood);
   RB(g, w, .28, dp, 0, .1, 0, A, .04, 3);
@@ -1232,7 +1232,7 @@ def('armchair', { name: 'Кресло', cat: 'living', w: .9, d: .9, h: .85, a: 
   cushionSofa(g, d, A, Bm, 1, -w / 2 + .15, w / 2 - .15, dp, R);
   RB(g, .36, .32, .12, 0, .55, -dp / 2 + .45, Bm, .06, 3).rotation.x = -.25;
 } });
-def('coffeeTable', { name: 'Журнальный столик', cat: 'living', w: 1.1, d: .6, h: .42, surface: .42, a: '#c9a77c', b: '#2b2c2e', la: 'Столешница', lb: 'Ножки', build(g, A, Bm, R, d) {
+def('coffeeTable', { name: 'Журнальный столик', cat: 'living', w: 1.0, d: .55, h: .42, surface: .42, a: '#c9a77c', b: '#2b2c2e', la: 'Столешница', lb: 'Ножки', build(g, A, Bm, R, d) {
   RB(g, d.w, .04, d.d, 0, .38, 0, A, .015, 2);
   B(g, d.w - .14, .02, d.d - .14, 0, .12, 0, A);
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) B(g, .035, .38, .035, sx * (d.w / 2 - .07), 0, sz * (d.d / 2 - .07), Bm);
@@ -1257,6 +1257,8 @@ def('rug', { name: 'Ковёр', cat: 'living', w: 2.4, d: 1.7, h: .016, rug: tr
   B(g, d.w - .6, .017, .04, 0, 0, 0, Bm);
   B(g, .04, .0172, d.d - .6, 0, 0, 0, Bm);
 } });
+
+def('rugLarge', { name: 'Ковёр 3×4', cat: 'living', w: 4.0, d: 3.0, h: .016, rug: true, a: '#cdbda5', b: '#8a6a55', la: 'Поле', lb: 'Рисунок', build(g, A, Bm, R, d) { DEFS.rug.build(g, A, Bm, R, d); } });
 
 def('stBooks', { name: 'Стенка: книжный модуль', cat: 'wall', w: .9, d: .45, h: 2.3, a: '#7b5a43', b: '#efe9de', la: 'Корпус', lb: 'Фасады', build(g, A, Bm, R, d) {
   const w = d.w, D = d.d, h = d.h;
@@ -1319,7 +1321,7 @@ def('stTV', { name: 'Стенка: ТВ-секция', cat: 'wall', w: 1.7, d: .
   books(g, -w / 2 + .12, -w / 2 + .45, 1.17, -D / 2 + .02, .24, R, .25);
   minPlant(g, w / 2 - .25, .5, -.05, R, 1.2);
 } });
-def('stCorner', { name: 'Стенка: угловой модуль', cat: 'wall', w: .9, d: .9, h: 2.3, a: '#7b5a43', b: '#efe9de', la: 'Корпус', lb: 'Фасады', build(g, A, Bm, R, d) {
+def('stCorner', { name: 'Стенка: угловой модуль', cat: 'wall', w: .85, d: .85, h: 2.3, a: '#7b5a43', b: '#efe9de', la: 'Корпус', lb: 'Фасады', build(g, A, Bm, R, d) {
   const W = d.w, D = d.d, h = d.h;
   B(g, .02, h, D, -W / 2 + .01, 0, 0, A);
   B(g, W, h, .02, 0, 0, -D / 2 + .01, A);
@@ -1362,8 +1364,8 @@ def('shoeRack', { name: 'Обувница', cat: 'wall', w: .8, d: .3, h: .5, su
   for (const [x, y] of [[-.25, .04], [-.05, .04], [.2, .04], [-.2, .24], [.12, .24]]) { RB(g, .1, .08, .26, x, y, 0, Bm, .03, 1); RB(g, .1, .08, .26, x + .1, y, .01, Bm, .03, 1); }
 } });
 
-def('doubleBed', { name: 'Кровать двуспальная', cat: 'bedroom', w: 1.7, d: 2.1, h: 1.05, a: '#cfc6b8', b: '#5f7a8c', la: 'Каркас', lb: 'Плед', build(g, A, Bm, R, d) { bed(g, A, Bm, d, 2); } });
-def('singleBed', { name: 'Кровать', cat: 'bedroom', w: 1.0, d: 2.05, h: .95, a: '#e3d6c2', b: '#c46b4b', la: 'Каркас', lb: 'Плед', build(g, A, Bm, R, d) { bed(g, A, Bm, d, 1); } });
+def('doubleBed', { name: 'Кровать двуспальная', cat: 'bedroom', w: 1.64, d: 2.05, h: 1.05, a: '#cfc6b8', b: '#5f7a8c', la: 'Каркас', lb: 'Плед', build(g, A, Bm, R, d) { bed(g, A, Bm, d, 2); } });
+def('singleBed', { name: 'Кровать', cat: 'bedroom', w: .95, d: 2.0, h: .95, a: '#e3d6c2', b: '#c46b4b', la: 'Каркас', lb: 'Плед', build(g, A, Bm, R, d) { bed(g, A, Bm, d, 1); } });
 function bed(g, A, Bm, d, n) {
   const w = d.w, D = d.d;
   legs4(g, w - .1, D - .1, .08, SH.dark, .025);
@@ -1376,7 +1378,7 @@ function bed(g, A, Bm, d, n) {
   const pw = n === 2 ? (w - .2) / 2 : w - .24;
   for (let i = 0; i < n; i++) RB(g, pw - .04, .14, .42, n === 2 ? (i ? 1 : -1) * (pw / 2 + .02) : 0, .53, -D / 2 + .34, SH.linen, .06, 3).rotation.x = -.18;
 }
-def('wardrobe', { name: 'Шкаф-купе', cat: 'bedroom', w: 1.8, d: .62, h: 2.3, a: '#ede8df', b: '#c9a77c', la: 'Корпус', lb: 'Двери', build(g, A, Bm, R, d) {
+def('wardrobe', { name: 'Шкаф-купе', cat: 'bedroom', w: 1.6, d: .6, h: 2.3, a: '#ede8df', b: '#c9a77c', la: 'Корпус', lb: 'Двери', build(g, A, Bm, R, d) {
   const w = d.w, D = d.d;
   B(g, w, d.h - .08, D - .04, 0, .08, -.02, A);
   B(g, w - .04, .08, .02, 0, 0, D / 2 - .06, SH.black);
@@ -1386,26 +1388,26 @@ def('wardrobe', { name: 'Шкаф-купе', cat: 'bedroom', w: 1.8, d: .62, h: 
   B(g, w / 2 - .12, d.h - .3, .006, w / 4 - .01, .2, D / 2 - .002, SH.mirror);
   for (const x of [-w / 2 + .01, -.01, .01, w / 2 - .01]) B(g, .02, d.h - .12, .03, x, .09, D / 2 - .025, SH.metal);
 } });
-def('nightstand', { name: 'Тумбочка', cat: 'bedroom', w: .45, d: .4, h: .5, surface: .5, a: '#c9a77c', b: '#efe9de', la: 'Корпус', lb: 'Ящик', build(g, A, Bm, R, d) {
+def('nightstand', { name: 'Тумбочка', cat: 'bedroom', w: .42, d: .38, h: .5, surface: .5, a: '#c9a77c', b: '#efe9de', la: 'Корпус', lb: 'Ящик', build(g, A, Bm, R, d) {
   legs4(g, d.w - .07, d.d - .07, .12, A, .014);
   RB(g, d.w, .38, d.d, 0, .12, 0, A, .012, 1);
   B(g, d.w - .05, .15, .015, 0, .3, d.d / 2 + .007, Bm); B(g, d.w - .05, .15, .015, 0, .14, d.d / 2 + .007, Bm);
   S(g, .013, 0, .375, d.d / 2 + .025, SH.chrome); S(g, .013, 0, .215, d.d / 2 + .025, SH.chrome);
 } });
-def('dresser', { name: 'Комод', cat: 'bedroom', w: 1.2, d: .48, h: .85, surface: .85, a: '#ede8df', b: '#c9a77c', la: 'Корпус', lb: 'Ящики', build(g, A, Bm, R, d) {
+def('dresser', { name: 'Комод', cat: 'bedroom', w: 1.0, d: .45, h: .85, surface: .85, a: '#ede8df', b: '#c9a77c', la: 'Корпус', lb: 'Ящики', build(g, A, Bm, R, d) {
   const w = d.w, D = d.d;
   legs4(g, w - .08, D - .08, .1, SH.dark, .016);
   B(g, w, .75, D, 0, .1, 0, A);
   for (let r = 0; r < 3; r++) for (const s of [-1, 1]) { const y = .12 + r * .24; B(g, w / 2 - .03, .22, .016, s * (w / 4 - .005), y, D / 2 + .008, Bm); S(g, .014, s * (w / 4 - .005), y + .11, D / 2 + .026, SH.chrome); }
   minPlant(g, -w / 2 + .15, .85, 0, R, 1.1); vase(g, w / 2 - .15, .85, -.05, BOOK[11]);
 } });
-def('desk', { name: 'Письменный стол', cat: 'work', w: 1.4, d: .7, h: .75, surface: .75, a: '#c9a77c', b: '#ede8df', la: 'Столешница', lb: 'Опоры', build(g, A, Bm, R, d) {
+def('desk', { name: 'Письменный стол', cat: 'work', w: 1.2, d: .6, h: .75, surface: .75, a: '#c9a77c', b: '#ede8df', la: 'Столешница', lb: 'Опоры', build(g, A, Bm, R, d) {
   const w = d.w, D = d.d;
   RB(g, w, .03, D, 0, .72, 0, A, .01, 1);
   for (const s of [-1, 1]) B(g, .03, .72, D - .06, s * (w / 2 - .05), 0, 0, Bm);
   B(g, w - .13, .3, .02, 0, .4, -D / 2 + .05, Bm);
 } });
-def('pcDesk', { name: 'Компьютерный стол', cat: 'work', w: 1.6, d: .75, h: .75, surface: .75, a: '#3a3b3f', b: '#c9a77c', la: 'Каркас', lb: 'Столешница', build(g, A, Bm, R, d) {
+def('pcDesk', { name: 'Компьютерный стол', cat: 'work', w: 1.4, d: .7, h: .75, surface: .75, a: '#3a3b3f', b: '#c9a77c', la: 'Каркас', lb: 'Столешница', build(g, A, Bm, R, d) {
   const w = d.w, D = d.d;
   RB(g, w, .03, D, 0, .72, 0, Bm, .01, 1);
   B(g, .03, .72, D - .06, -w / 2 + .05, 0, 0, A);
@@ -1501,7 +1503,7 @@ def('microwave', { name: 'Микроволновка', cat: 'kitchen', w: .5, d:
   B(g, .34, .22, .008, -.06, .045, D / 2, Bm);
   B(g, .1, .24, .006, .18, .035, D / 2, SH.black);
 } });
-def('diningTable', { name: 'Обеденный стол', cat: 'kitchen', w: 1.4, d: .85, h: .75, surface: .75, a: '#c9a77c', b: '#c9a77c', la: 'Столешница', lb: 'Ножки', build(g, A, Bm, R, d) {
+def('diningTable', { name: 'Обеденный стол', cat: 'kitchen', w: 1.2, d: .75, h: .75, surface: .75, a: '#c9a77c', b: '#c9a77c', la: 'Столешница', lb: 'Ножки', build(g, A, Bm, R, d) {
   RB(g, d.w, .04, d.d, 0, .71, 0, A, .015, 2);
   B(g, d.w - .16, .08, d.d - .16, 0, .63, 0, A);
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) C(g, .028, .02, .71, sx * (d.w / 2 - .08), 0, sz * (d.d / 2 - .08), Bm, 12);
@@ -1658,38 +1660,37 @@ def('wickerChair', { name: 'Плетёное кресло', cat: 'decor', w: .7,
 
 /* ------------------------------------------------------------------ default layout */
 const DEFAULT_LAYOUT = [
-  // гостиная: стенка по нижней стене и кусочком по левой, окно справа
-  ['stCorner', 2.51, -.51, HP], ['stTV', 3.81, -.285, PI], ['stGlass', 5.11, -.285, PI], ['stBooks', 6.01, -.285, PI], ['stClosed', 2.285, -1.36, HP],
-  ['plant', 6.7, -.42, 0], ['tv', 3.81, -.36, PI, .5],
-  ['rug', 3.81, -3.15, 0], ['coffeeTable', 3.81, -3.0, 0], ['vase', 3.95, -2.95, 0, .42],
-  ['sofa', 3.81, -4.5, 0], ['armchair', 6.1, -2.85, -HP], ['floorLamp', 2.45, -4.95, 0], ['plant', 6.65, -5.1, 0], ['bookshelf', 5.8, -5.265, 0],
-  ['picture', 3.81, -5.42, 0, 1.45], ['radiator', 6.9, -2.85, -HP, .1], ['curtainsWide', 6.85, -2.85, -HP, 0],
+  // гостиная: стенка по нижней стене и кусочком по левой, ковёр 3×4, диван, столик, окно справа
+  ['stCorner', 2.085, -.485, HP], ['stTV', 3.36, -.285, PI], ['stGlass', 4.66, -.285, PI], ['stClosed', 5.51, -.285, PI], ['stClosed', 1.885, -1.31, HP],
+  ['tv', 3.36, -.36, PI, .5], ['rugLarge', 3.4, -2.95, HP], ['coffeeTable', 3.4, -3.2, 0], ['vase', 3.5, -3.15, 0, .42],
+  ['sofa', 3.4, -4.7, 0], ['armchair', 5.4, -2.7, -HP], ['floorLamp', 1.95, -4.85, 0], ['plant', 5.75, -4.85, 0], ['bookshelf', 5.0, -5.065, 0],
+  ['picture', 3.4, -5.22, 0, 1.45], ['radiator', 6.05, -2.5, -HP, .1], ['curtainsWide', 6.0, -2.5, -HP, 0],
   // малая спальня
-  ['doubleBed', 4.3, -8.29, 0], ['nightstand', 3.0, -9.14, 0], ['nightstand', 5.6, -9.14, 0],
-  ['tableLamp', 3.0, -9.14, 0, .5], ['tableLamp', 5.6, -9.14, 0, .5], ['wardrobe', 5.3, -5.87, PI],
-  ['armchair', 2.75, -6.2, 3 * PI / 4], ['floorLamp', 3.75, -5.8, 0], ['rug', 4.3, -7.7, 0], ['bookshelf', 2.235, -8.7, HP],
-  ['plant', 6.65, -9.0, 0], ['picture', 4.3, -9.32, 0, 1.4], ['radiator', 6.9, -7.45, -HP, .1], ['curtains', 6.85, -7.45, -HP, 0],
-  // кухня: гарнитур у верхней стены, справа выход на балкон и окно с батареей
-  ['kFridge', 2.36, -12.215, 0], ['kBase', 2.96, -12.24, 0], ['kStove', 3.56, -12.24, 0], ['kBase', 4.16, -12.24, 0], ['kSink', 4.86, -12.24, 0], ['kBase', 5.56, -12.24, 0],
-  ['kUpper', 2.96, -12.375, 0, 1.45], ['kHood', 3.56, -12.315, 0, 1.6], ['kUpper', 4.16, -12.375, 0, 1.45], ['kUpper', 4.76, -12.375, 0, 1.45], ['kUpper', 5.56, -12.375, 0, 1.45],
-  ['microwave', 5.56, -12.26, 0, .9], ['diningTable', 4.4, -10.4, 0],
-  ['chair', 4.05, -9.75, PI], ['chair', 4.75, -9.75, PI], ['chair', 4.05, -11.05, 0], ['chair', 4.75, -11.05, 0], ['plant', 2.4, -11.2, 0],
-  ['radiator', 6.9, -10.55, -HP, .1],
+  ['doubleBed', 4.0, -7.515, 0], ['nightstand', 2.75, -8.35, 0], ['nightstand', 5.25, -8.35, 0],
+  ['tableLamp', 2.75, -8.35, 0, .5], ['tableLamp', 5.25, -8.35, 0, .5], ['wardrobe', 5.2, -5.66, PI],
+  ['armchair', 2.3, -5.95, 3 * PI / 4], ['floorLamp', 3.3, -5.65, 0], ['rug', 4.0, -7.0, 0], ['bookshelf', 1.835, -7.95, HP],
+  ['picture', 4.0, -8.52, 0, 1.4], ['radiator', 6.05, -6.95, -HP, .1], ['curtains', 6.0, -6.95, -HP, 0],
+  // кухня: гарнитур у верхней стены, стол у нижней, справа выход на балкон и окно с батареей
+  ['kFridge', 1.96, -10.715, 0], ['kBase', 2.56, -10.74, 0], ['kStove', 3.16, -10.74, 0], ['kBase', 3.76, -10.74, 0], ['kSink', 4.46, -10.74, 0], ['kBase', 5.16, -10.74, 0],
+  ['kUpper', 2.56, -10.875, 0, 1.45], ['kHood', 3.16, -10.815, 0, 1.6], ['kUpper', 3.76, -10.875, 0, 1.45], ['kUpper', 4.36, -10.875, 0, 1.45], ['kUpper', 5.16, -10.875, 0, 1.45],
+  ['microwave', 5.16, -10.76, 0, .9], ['diningTable', 4.0, -9.035, 0],
+  ['chair', 3.65, -9.65, 0], ['chair', 4.35, -9.65, 0], ['chair', 3.17, -9.0, HP], ['chair', 4.83, -9.0, -HP],
+  ['radiator', 6.05, -9.4, -HP, .1],
   // балкон
-  ['roundTable', 8.0, -10.75, 0], ['wickerChair', 8.0, -10.0, PI], ['wickerChair', 8.0, -11.5, 0], ['smallPlant', 8.0, -10.75, 0, .72], ['plant', 8.3, -12.2, 0],
+  ['roundTable', 6.95, -9.75, 0], ['wickerChair', 6.95, -9.1, PI], ['smallPlant', 6.95, -9.75, 0, .72], ['plant', 7.25, -10.75, 0],
   // ванная: душ слева вверху, раковина с зеркалом, туалет, напротив стиралка и шкафчик
-  ['showerCabin', -.49, -13.09, 0], ['bathSink', .55, -13.31, 0], ['toilet', 1.35, -13.215, 0],
-  ['washer', 1.35, -11.135, PI], ['bathCabinet', 1.35, -11.01, PI, 1.35], ['plant', -.6, -11.2, 0],
+  ['showerCabin', -.29, -11.39, 0], ['bathSink', .5, -11.61, 0], ['toilet', 1.2, -11.515, 0],
+  ['washer', 1.2, -10.035, PI], ['bathCabinet', 1.2, -9.91, PI, 1.35], ['plant', -.4, -10.2, 0],
   // большая спальня: вытянутая, дверь справа в коридор
-  ['doubleBed', -3.0, -7.91, PI], ['nightstand', -4.3, -7.06, PI], ['nightstand', -1.7, -7.06, PI],
-  ['tableLamp', -4.3, -7.06, 0, .5], ['tableLamp', -1.7, -7.06, 0, .5],
-  ['wardrobe', -3.0, -10.43, 0], ['dresser', -5.9, -7.5, HP], ['pcDesk', -.435, -7.8, -HP], ['computer', -.39, -7.8, -HP, .75],
-  ['officeChair', -1.15, -7.9, HP], ['pcTower', -.29, -8.9, -HP], ['rug', -3.0, -9.1, 0], ['armchair', -5.4, -9.4, HP],
-  ['floorLamp', -5.45, -10.45, 0], ['plant', -4.6, -10.4, 0], ['picture', -3.0, -6.88, PI, 1.45],
-  ['radiator', -6.05, -9.5, HP, .1], ['curtains', -6.0, -9.5, HP, 0],
-  // прихожая и коридор
-  ['hallUnit', -1.34, -1.3, HP], ['shoeRack', -.75, -.21, PI], ['mirrorWall', -.8, -2.525, 0, .95], ['runner', 1.0, -5.5, 0],
-  ['plant', .4, -8.8, 0], ['picture', 1.92, -5.6, -HP, 1.45], ['picture', .08, -4.6, HP, 1.45],
+  ['doubleBed', -2.6, -7.485, PI], ['nightstand', -3.85, -6.65, PI], ['nightstand', -1.35, -6.65, PI],
+  ['tableLamp', -3.85, -6.65, 0, .5], ['tableLamp', -1.35, -6.65, 0, .5],
+  ['wardrobe', -2.6, -9.34, 0], ['dresser', -4.15, -9.415, 0], ['pcDesk', -.41, -7.6, -HP], ['computer', -.37, -7.6, -HP, .75],
+  ['officeChair', -1.1, -7.7, HP], ['pcTower', -.28, -8.5, -HP], ['rug', -2.6, -8.1, 0], ['armchair', -4.25, -8.3, HP],
+  ['floorLamp', -3.6, -8.95, 0], ['plant', -4.65, -6.8, 0], ['picture', -2.6, -6.48, PI, 1.45],
+  ['radiator', -4.85, -8.55, HP, .1], ['curtains', -4.8, -8.55, HP, 0],
+  // коридор: прямой
+  ['hallUnit', .26, -1.9, HP], ['shoeRack', .21, -.75, HP], ['mirrorWall', .075, -3.6, HP, .95], ['runner', .8, -5.6, 0],
+  ['plant', .35, -8.0, 0], ['picture', 1.52, -4.85, -HP, 1.45],
 ];
 const DEFAULT_ROOMS = {
   hall: { wall: '#e4dbcf', finish: 'paint', floor: 'tileBeige' },
@@ -1894,7 +1895,7 @@ function setRing(it) {
 /* ------------------------------------------------------------------ state, history */
 let state = null;
 const history = [];
-const KEY = 'kvartira3d-v4';
+const KEY = 'kvartira3d-v5';
 function serialize() {
   return { v: 1, rooms: state.rooms, walls: state.walls, items: items.map((it) => ({ uid: it.uid, type: it.type, x: +it.x.toFixed(3), z: +it.z.toFixed(3), r: +it.r.toFixed(4), y: +it.y.toFixed(3), a: it.a, b: it.b })) };
 }
