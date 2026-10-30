@@ -211,7 +211,8 @@ svg { display: block; }
 .brush { width: 42px; height: 42px; border-radius: 50%; flex: none; background-size: 220%; background-position: center; box-shadow: inset 0 0 0 1px rgba(0,0,0,.1), 0 4px 12px rgba(0,0,0,.15); transition: background-color .4s; }
 
 .minimap { width: 100%; max-width: 100%; height: auto; max-height: 168px; display: block; border-radius: 20px; background: var(--chip); padding: 8px; }
-.minimap .room { stroke: var(--ink); stroke-opacity: .55; stroke-width: .09; cursor: pointer; transition: fill .5s, opacity .2s; }
+.minimap .room { cursor: pointer; transition: fill .5s, opacity .2s; }
+.minimap .wl { stroke: var(--ink); stroke-opacity: .6; stroke-width: .12; stroke-linecap: round; pointer-events: none; }
 .minimap .room:active { opacity: .7; }
 .minimap .furn { fill: var(--ink); fill-opacity: .2; pointer-events: none; }
 .minimap .win { stroke: #6fb4d6; stroke-width: .16; stroke-linecap: round; pointer-events: none; }
@@ -839,35 +840,44 @@ function floorShader(mat) {
 function std(hex, rough = .7, metal = 0) { return new T.MeshStandardMaterial({ color: lin(hex), roughness: rough, metalness: metal }); }
 
 /* ------------------------------------------------------------------ plan */
+// rooms are unions of rectangles [x1, x2, z1, z2]; rectangles of one room join without a wall
 const ROOMS = [
-  { id: 'hall', name: 'Коридор', x1: 0, x2: 1.6, z1: -9.4, z2: 0 },
-  { id: 'living', name: 'Гостиная', x1: 1.6, x2: 6.0, z1: -4.8, z2: 0 },
-  { id: 'bed1', name: 'Малая спальня', x1: 1.6, x2: 6.0, z1: -8.2, z2: -4.8 },
-  { id: 'kitchen', name: 'Кухня', x1: 1.6, x2: 6.0, z1: -11.0, z2: -8.2 },
-  { id: 'bath', name: 'Ванная', x1: -0.9, x2: 1.6, z1: -11.8, z2: -9.4 },
-  { id: 'bed2', name: 'Спальня', x1: -5.4, x2: 0, z1: -9.4, z2: -5.9 },
-  { id: 'balcony', name: 'Балкон', x1: 6.0, x2: 7.4, z1: -11.0, z2: -8.4 },
+  { id: 'hall', name: 'Коридор', rects: [[0, 2.0, -10.8, 0], [-1.6, 0, -2.6, 0]] },
+  { id: 'living', name: 'Гостиная', rects: [[2.0, 7.05, -5.5, 0]] },
+  { id: 'bed1', name: 'Малая спальня', rects: [[2.0, 7.05, -9.4, -5.5]] },
+  { id: 'kitchen', name: 'Кухня', rects: [[2.0, 7.05, -12.6, -9.4]] },
+  { id: 'bath', name: 'Ванная', rects: [[-1.0, 2.0, -13.6, -10.8]] },
+  { id: 'bed2', name: 'Спальня', rects: [[-6.2, 0, -10.8, -6.8]] },
+  { id: 'balcony', name: 'Балкон', rects: [[7.05, 8.65, -12.6, -9.6]] },
 ];
-const ROOM = {}; ROOMS.forEach((r) => { ROOM[r.id] = r; r.cx = (r.x1 + r.x2) / 2; r.cz = (r.z1 + r.z2) / 2; r.area = (r.x2 - r.x1) * (r.z2 - r.z1); });
+const ROOM = {};
+ROOMS.forEach((r) => {
+  ROOM[r.id] = r;
+  r.x1 = Math.min(...r.rects.map((q) => q[0])); r.x2 = Math.max(...r.rects.map((q) => q[1]));
+  r.z1 = Math.min(...r.rects.map((q) => q[2])); r.z2 = Math.max(...r.rects.map((q) => q[3]));
+  const main = r.rects[0];
+  r.cx = (main[0] + main[1]) / 2; r.cz = (main[2] + main[3]) / 2;
+  r.area = r.rects.reduce((a, q) => a + (q[1] - q[0]) * (q[3] - q[2]), 0);
+});
 ROOM.outside = { id: 'outside', name: 'Фасад' };
-const BOUNDS = { x0: -5.6, x1: 7.6, z0: -12.0, z1: 0.3 };
+const BOUNDS = { x0: -6.4, x1: 8.9, z0: -13.8, z1: 0.3 };
 const CX = (BOUNDS.x0 + BOUNDS.x1) / 2, CZ = (BOUNDS.z0 + BOUNDS.z1) / 2;
-const H = 2.7, LOW = 0.3, TR = 0.07, TX = 0.14, RAIL = 1.05;
+const H = 2.7, LOW = 0.3, TR = 0.06, TX = 0.14, RAIL = 1.05;
 const OPENINGS = [
-  { o: 'h', at: 0, from: 0.45, to: 1.25, type: 'entry', top: 2.1 },
-  { o: 'v', at: 1.6, from: -3.4, to: -2.0, type: 'door2', into: 'living', top: 2.2 },
-  { o: 'v', at: 1.6, from: -7.1, to: -6.2, type: 'door', into: 'bed1', hinge: 'to', top: 2.1 },
-  { o: 'v', at: 1.6, from: -9.2, to: -8.35, type: 'door', into: 'kitchen', hinge: 'to', top: 2.1 },
-  { o: 'h', at: -9.4, from: 0.1, to: 0.85, type: 'door', into: 'bath', hinge: 'from', top: 2.1 },
-  { o: 'v', at: 0, from: -9.2, to: -8.35, type: 'door', into: 'bed2', hinge: 'from', top: 2.1 },
-  { o: 'v', at: 6.0, from: -3.6, to: -1.4, type: 'window', bottom: .8, top: 2.3 },
-  { o: 'v', at: 6.0, from: -7.3, to: -5.9, type: 'window', bottom: .85, top: 2.25 },
-  { o: 'v', at: 6.0, from: -10.85, to: -10.05, type: 'bdoor', top: 2.2 },
-  { o: 'v', at: 6.0, from: -9.85, to: -8.5, type: 'window', bottom: .9, top: 2.25 },
-  { o: 'v', at: -5.4, from: -9.0, to: -7.5, type: 'window', bottom: .85, top: 2.25 },
+  { o: 'h', at: 0, from: 0.58, to: 1.38, type: 'entry', top: 2.1 },
+  { o: 'v', at: 2.0, from: -3.8, to: -2.4, type: 'door2', into: 'living', top: 2.2 },
+  { o: 'v', at: 2.0, from: -8.1, to: -7.2, type: 'door', into: 'bed1', hinge: 'to', top: 2.1 },
+  { o: 'v', at: 2.0, from: -10.45, to: -9.55, type: 'door', into: 'kitchen', hinge: 'to', top: 2.1 },
+  { o: 'h', at: -10.8, from: 0.15, to: 0.9, type: 'door', into: 'bath', hinge: 'from', top: 2.1 },
+  { o: 'v', at: 0, from: -10.45, to: -9.55, type: 'door', into: 'bed2', hinge: 'from', top: 2.1 },
+  { o: 'v', at: 7.05, from: -4.1, to: -1.6, type: 'window', bottom: .8, top: 2.3 },
+  { o: 'v', at: 7.05, from: -8.25, to: -6.65, type: 'window', bottom: .85, top: 2.25 },
+  { o: 'v', at: 7.05, from: -12.4, to: -11.6, type: 'bdoor', top: 2.2 },
+  { o: 'v', at: 7.05, from: -11.3, to: -9.8, type: 'window', bottom: .9, top: 2.25 },
+  { o: 'v', at: -6.2, from: -10.35, to: -8.65, type: 'window', bottom: .85, top: 2.25 },
 ];
 function roomAt(x, z) {
-  for (const r of ROOMS) if (x > r.x1 + 1e-6 && x < r.x2 - 1e-6 && z > r.z1 + 1e-6 && z < r.z2 - 1e-6) return r.id;
+  for (const r of ROOMS) for (const q of r.rects) if (x > q[0] + 1e-6 && x < q[1] - 1e-6 && z > q[2] + 1e-6 && z < q[3] - 1e-6) return r.id;
   return null;
 }
 
@@ -901,7 +911,7 @@ function boxGeo(w, h, d) {
 function buildPlan() {
   const lines = new Map();
   const add = (o, at, a, b) => { const k = o + at.toFixed(3); if (!lines.has(k)) lines.set(k, { o, at, iv: [] }); lines.get(k).iv.push([Math.min(a, b), Math.max(a, b)]); };
-  for (const r of ROOMS) { add('h', r.z1, r.x1, r.x2); add('h', r.z2, r.x1, r.x2); add('v', r.x1, r.z1, r.z2); add('v', r.x2, r.z1, r.z2); }
+  for (const r of ROOMS) for (const [x1, x2, z1, z2] of r.rects) { add('h', z1, x1, x2); add('h', z2, x1, x2); add('v', x1, z1, z2); add('v', x2, z1, z2); }
   for (const L of lines.values()) {
     const pts = [...new Set(L.iv.flat().map((v) => +v.toFixed(3)))].sort((a, b) => a - b);
     for (let i = 0; i < pts.length - 1; i++) {
@@ -1046,13 +1056,16 @@ function buildPlan() {
   // floors and base slab
   for (const r of ROOMS) {
     const mat = floorShader(new T.MeshStandardMaterial({ color: lin('#ffffff'), roughness: .6, map: floorTex('oak') }));
-    const m = new T.Mesh(new T.PlaneGeometry(r.x2 - r.x1, r.z2 - r.z1), mat);
-    m.rotation.x = -HP; m.position.set(r.cx, 0.001, r.cz); m.receiveShadow = true;
-    m.userData = { room: r.id };
-    r.floor = m; scene.add(m); floorMeshes.push(m);
-    const e = r.id === 'balcony' ? .05 : TX;
-    const pl = new T.Mesh(boxGeo(r.x2 - r.x1 + 2 * e, .3, r.z2 - r.z1 + 2 * e), MAT.plinth);
-    pl.position.set(r.cx, -.152, r.cz); pl.receiveShadow = true; scene.add(pl); reflHide.push(pl);
+    for (const [x1, x2, z1, z2] of r.rects) {
+      const m = new T.Mesh(new T.PlaneGeometry(x2 - x1, z2 - z1), mat);
+      m.rotation.x = -HP; m.position.set((x1 + x2) / 2, 0.001, (z1 + z2) / 2); m.receiveShadow = true;
+      m.userData = { room: r.id };
+      if (!r.floor) r.floor = m;
+      scene.add(m); floorMeshes.push(m);
+      const e = r.id === 'balcony' ? .05 : TX;
+      const pl = new T.Mesh(boxGeo(x2 - x1 + 2 * e, .3, z2 - z1 + 2 * e), MAT.plinth);
+      pl.position.set((x1 + x2) / 2, -.152, (z1 + z2) / 2); pl.receiveShadow = true; scene.add(pl); reflHide.push(pl);
+    }
   }
   const ground = new T.Mesh(new T.PlaneGeometry(80, 80), new T.ShadowMaterial({ opacity: .12 }));
   ground.rotation.x = -HP; ground.position.set(CX, -.31, CZ); ground.receiveShadow = true; scene.add(ground); reflHide.push(ground);
@@ -1588,8 +1601,8 @@ function curtains(g, A, Bm, R, d) {
   }
   B(g, w - 2 * pw + .04, d.h - .12, .004, 0, .06, z0 + .235, SH.tulle);
 }
-def('curtains', { name: 'Шторы с тюлем', cat: 'decor', w: 2.0, d: .28, h: 2.42, wall: true, a: '#b7a08a', b: '#c9cdd0', ra: .95, la: 'Ткань', lb: 'Карниз', build: curtains });
-def('curtainsWide', { name: 'Шторы широкие', cat: 'decor', w: 2.8, d: .28, h: 2.42, wall: true, a: '#8e9aa6', b: '#c9cdd0', ra: .95, la: 'Ткань', lb: 'Карниз', build: curtains });
+def('curtains', { name: 'Шторы с тюлем', cat: 'decor', w: 2.3, d: .28, h: 2.42, wall: true, a: '#b7a08a', b: '#c9cdd0', ra: .95, la: 'Ткань', lb: 'Карниз', build: curtains });
+def('curtainsWide', { name: 'Шторы широкие', cat: 'decor', w: 3.2, d: .28, h: 2.42, wall: true, a: '#8e9aa6', b: '#c9cdd0', ra: .95, la: 'Ткань', lb: 'Карниз', build: curtains });
 def('plant', { name: 'Растение в кадке', cat: 'decor', w: .5, d: .5, h: 1.3, a: '#4b7a44', b: '#d9d3ca', la: 'Листья', lb: 'Кашпо', build(g, A, Bm, R, d) {
   C(g, .17, .13, .34, 0, 0, 0, Bm, 20);
   C(g, .155, .155, .02, 0, .31, 0, SH.soil, 18);
@@ -1646,36 +1659,37 @@ def('wickerChair', { name: 'Плетёное кресло', cat: 'decor', w: .7,
 /* ------------------------------------------------------------------ default layout */
 const DEFAULT_LAYOUT = [
   // гостиная: стенка по нижней стене и кусочком по левой, окно справа
-  ['stCorner', 2.12, -.52, HP], ['stTV', 3.42, -.295, PI], ['stGlass', 4.72, -.295, PI], ['stClosed', 1.895, -1.37, HP], ['plant', 5.55, -.42, 0],
-  ['tv', 3.42, -.37, PI, .5], ['rug', 3.42, -2.7, 0], ['coffeeTable', 3.42, -2.55, 0], ['vase', 3.55, -2.5, 0, .42],
-  ['sofa', 3.42, -3.9, 0], ['armchair', 5.1, -2.5, -HP], ['floorLamp', 1.95, -4.4, 0], ['plant', 5.55, -4.35, 0],
-  ['picture', 3.42, -4.71, 0, 1.45], ['radiator', 5.84, -2.5, -HP, .1], ['curtainsWide', 5.79, -2.5, -HP, 0],
-  // малая спальня: тёплая и уютная
-  ['doubleBed', 3.9, -7.08, 0], ['nightstand', 2.75, -7.93, 0], ['nightstand', 5.05, -7.93, 0],
-  ['tableLamp', 2.75, -7.93, 0, .5], ['tableLamp', 5.05, -7.93, 0, .5], ['wardrobe', 4.5, -5.18, PI],
-  ['armchair', 2.32, -5.52, 3 * PI / 4], ['floorLamp', 3.25, -5.05, 0], ['rug', 3.9, -6.55, 0], ['plant', 5.6, -7.85, 0],
-  ['picture', 3.9, -8.11, 0, 1.4], ['bookshelf', 1.845, -7.7, HP], ['radiator', 5.84, -6.6, -HP, .1], ['curtains', 5.79, -6.6, -HP, 0],
+  ['stCorner', 2.51, -.51, HP], ['stTV', 3.81, -.285, PI], ['stGlass', 5.11, -.285, PI], ['stBooks', 6.01, -.285, PI], ['stClosed', 2.285, -1.36, HP],
+  ['plant', 6.7, -.42, 0], ['tv', 3.81, -.36, PI, .5],
+  ['rug', 3.81, -3.15, 0], ['coffeeTable', 3.81, -3.0, 0], ['vase', 3.95, -2.95, 0, .42],
+  ['sofa', 3.81, -4.5, 0], ['armchair', 6.1, -2.85, -HP], ['floorLamp', 2.45, -4.95, 0], ['plant', 6.65, -5.1, 0], ['bookshelf', 5.8, -5.265, 0],
+  ['picture', 3.81, -5.42, 0, 1.45], ['radiator', 6.9, -2.85, -HP, .1], ['curtainsWide', 6.85, -2.85, -HP, 0],
+  // малая спальня
+  ['doubleBed', 4.3, -8.29, 0], ['nightstand', 3.0, -9.14, 0], ['nightstand', 5.6, -9.14, 0],
+  ['tableLamp', 3.0, -9.14, 0, .5], ['tableLamp', 5.6, -9.14, 0, .5], ['wardrobe', 5.3, -5.87, PI],
+  ['armchair', 2.75, -6.2, 3 * PI / 4], ['floorLamp', 3.75, -5.8, 0], ['rug', 4.3, -7.7, 0], ['bookshelf', 2.235, -8.7, HP],
+  ['plant', 6.65, -9.0, 0], ['picture', 4.3, -9.32, 0, 1.4], ['radiator', 6.9, -7.45, -HP, .1], ['curtains', 6.85, -7.45, -HP, 0],
   // кухня: гарнитур у верхней стены, справа выход на балкон и окно с батареей
-  ['kFridge', 1.97, -10.605, 0], ['kBase', 2.57, -10.63, 0], ['kStove', 3.17, -10.63, 0], ['kBase', 3.77, -10.63, 0], ['kSink', 4.47, -10.63, 0],
-  ['kUpper', 2.57, -10.765, 0, 1.45], ['kHood', 3.17, -10.705, 0, 1.6], ['kUpper', 3.77, -10.765, 0, 1.45], ['kUpper', 4.37, -10.765, 0, 1.45],
-  ['microwave', 3.77, -10.65, 0, .9], ['diningTable', 3.9, -9.2, 0],
-  ['chair', 3.55, -8.55, PI], ['chair', 4.25, -8.55, PI], ['chair', 3.55, -9.85, 0], ['chair', 4.25, -9.85, 0], ['plant', 2.0, -9.9, 0],
-  ['radiator', 5.84, -9.175, -HP, .1],
+  ['kFridge', 2.36, -12.215, 0], ['kBase', 2.96, -12.24, 0], ['kStove', 3.56, -12.24, 0], ['kBase', 4.16, -12.24, 0], ['kSink', 4.86, -12.24, 0], ['kBase', 5.56, -12.24, 0],
+  ['kUpper', 2.96, -12.375, 0, 1.45], ['kHood', 3.56, -12.315, 0, 1.6], ['kUpper', 4.16, -12.375, 0, 1.45], ['kUpper', 4.76, -12.375, 0, 1.45], ['kUpper', 5.56, -12.375, 0, 1.45],
+  ['microwave', 5.56, -12.26, 0, .9], ['diningTable', 4.4, -10.4, 0],
+  ['chair', 4.05, -9.75, PI], ['chair', 4.75, -9.75, PI], ['chair', 4.05, -11.05, 0], ['chair', 4.75, -11.05, 0], ['plant', 2.4, -11.2, 0],
+  ['radiator', 6.9, -10.55, -HP, .1],
   // балкон
-  ['roundTable', 6.85, -9.5, 0], ['wickerChair', 6.85, -8.85, PI], ['smallPlant', 6.85, -9.5, 0, .72], ['plant', 7.05, -10.6, 0],
+  ['roundTable', 8.0, -10.75, 0], ['wickerChair', 8.0, -10.0, PI], ['wickerChair', 8.0, -11.5, 0], ['smallPlant', 8.0, -10.75, 0, .72], ['plant', 8.3, -12.2, 0],
   // ванная: душ слева вверху, раковина с зеркалом, туалет, напротив стиралка и шкафчик
-  ['showerCabin', -.38, -11.28, 0], ['bathSink', .5, -11.5, 0], ['toilet', 1.15, -11.405, 0],
-  ['washer', 1.15, -9.745, PI], ['bathCabinet', 1.15, -9.62, PI, 1.35],
+  ['showerCabin', -.49, -13.09, 0], ['bathSink', .55, -13.31, 0], ['toilet', 1.35, -13.215, 0],
+  ['washer', 1.35, -11.135, PI], ['bathCabinet', 1.35, -11.01, PI, 1.35], ['plant', -.6, -11.2, 0],
   // большая спальня: вытянутая, дверь справа в коридор
-  ['doubleBed', -2.6, -7.02, PI], ['nightstand', -3.9, -6.17, PI], ['nightstand', -1.3, -6.17, PI],
-  ['tableLamp', -3.9, -6.17, 0, .5], ['tableLamp', -1.3, -6.17, 0, .5],
-  ['wardrobe', -2.6, -9.02, 0], ['dresser', -5.09, -6.6, HP], ['pcDesk', -.445, -6.95, -HP], ['computer', -.4, -6.95, -HP, .75],
-  ['officeChair', -1.15, -7.05, HP], ['pcTower', -.3, -8.0, -HP], ['rug', -2.6, -8.05, 0], ['armchair', -4.55, -8.0, HP],
-  ['floorLamp', -4.6, -9.0, 0], ['plant', -4.0, -9.0, 0], ['picture', -2.6, -5.99, PI, 1.45],
-  ['radiator', -5.24, -8.25, HP, .1], ['curtains', -5.19, -8.25, HP, 0],
-  // коридор
-  ['hallUnit', .27, -2.4, HP], ['shoeRack', .22, -.8, HP], ['mirrorWall', .085, -4.3, HP, .95], ['runner', .8, -6.0, 0],
-  ['plant', .35, -7.6, 0], ['picture', 1.51, -4.6, -HP, 1.45],
+  ['doubleBed', -3.0, -7.91, PI], ['nightstand', -4.3, -7.06, PI], ['nightstand', -1.7, -7.06, PI],
+  ['tableLamp', -4.3, -7.06, 0, .5], ['tableLamp', -1.7, -7.06, 0, .5],
+  ['wardrobe', -3.0, -10.43, 0], ['dresser', -5.9, -7.5, HP], ['pcDesk', -.435, -7.8, -HP], ['computer', -.39, -7.8, -HP, .75],
+  ['officeChair', -1.15, -7.9, HP], ['pcTower', -.29, -8.9, -HP], ['rug', -3.0, -9.1, 0], ['armchair', -5.4, -9.4, HP],
+  ['floorLamp', -5.45, -10.45, 0], ['plant', -4.6, -10.4, 0], ['picture', -3.0, -6.88, PI, 1.45],
+  ['radiator', -6.05, -9.5, HP, .1], ['curtains', -6.0, -9.5, HP, 0],
+  // прихожая и коридор
+  ['hallUnit', -1.34, -1.3, HP], ['shoeRack', -.75, -.21, PI], ['mirrorWall', -.8, -2.525, 0, .95], ['runner', 1.0, -5.5, 0],
+  ['plant', .4, -8.8, 0], ['picture', 1.92, -5.6, -HP, 1.45], ['picture', .08, -4.6, HP, 1.45],
 ];
 const DEFAULT_ROOMS = {
   hall: { wall: '#e4dbcf', finish: 'paint', floor: 'tileBeige' },
@@ -1880,7 +1894,7 @@ function setRing(it) {
 /* ------------------------------------------------------------------ state, history */
 let state = null;
 const history = [];
-const KEY = 'kvartira3d-v3';
+const KEY = 'kvartira3d-v4';
 function serialize() {
   return { v: 1, rooms: state.rooms, walls: state.walls, items: items.map((it) => ({ uid: it.uid, type: it.type, x: +it.x.toFixed(3), z: +it.z.toFixed(3), r: +it.r.toFixed(4), y: +it.y.toFixed(3), a: it.a, b: it.b })) };
 }
@@ -2571,9 +2585,14 @@ function renderMinimap() {
   const pad = .5;
   svg.setAttribute('viewBox', `${BOUNDS.x0 - pad} ${BOUNDS.z0 - pad} ${BOUNDS.x1 - BOUNDS.x0 + 2 * pad} ${BOUNDS.z1 - BOUNDS.z0 + 2 * pad}`);
   for (const r of ROOMS) {
-    const rc = svgEl('rect', { class: 'room', x: r.x1, y: r.z1, width: r.x2 - r.x1, height: r.z2 - r.z1, fill: state.rooms[r.id].wall }, svg);
-    rc.addEventListener('click', () => { focusRoom(r.id); rc.animate([{ opacity: .5 }, { opacity: 1 }], { duration: 500 }); });
-    svgEl('title', {}, rc).textContent = r.name;
+    const grp = svgEl('g', { class: 'room', fill: state.rooms[r.id].wall, 'stroke-opacity': 0 }, svg);
+    for (const [x1, x2, z1, z2] of r.rects) svgEl('rect', { x: x1, y: z1, width: x2 - x1, height: z2 - z1 }, grp);
+    grp.addEventListener('click', () => { focusRoom(r.id); grp.animate([{ opacity: .5 }, { opacity: 1 }], { duration: 500 }); });
+    svgEl('title', {}, grp).textContent = r.name;
+  }
+  for (const sg of segs) {
+    const a = sg.o === 'h' ? [sg.a, sg.at, sg.b, sg.at] : [sg.at, sg.a, sg.at, sg.b];
+    svgEl('line', { class: 'wl', x1: a[0], y1: a[1], x2: a[2], y2: a[3] }, svg);
   }
   for (const op of OPENINGS) {
     const a = op.o === 'h' ? [op.from, op.at, op.to, op.at] : [op.at, op.from, op.at, op.to];
