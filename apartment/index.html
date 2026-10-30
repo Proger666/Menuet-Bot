@@ -223,7 +223,9 @@ body.mobile .glass, body.mobile .rlabel { background: var(--glass-m); -webkit-ba
 .minimap .gap { stroke: var(--glass-solid); stroke-width: .16; pointer-events: none; }
 .minimap .camw { fill: var(--accent); fill-opacity: .28; }
 .minimap .camd { fill: var(--accent); }
-.toggles { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.toggles { display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px; }
+.demoskip { position: fixed; z-index: 30; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 98px); transform: translateX(-50%); animation: panelIn .5s var(--spring); }
+.demoskip[hidden] { display: none; }
 .tg { aspect-ratio: 1; max-width: 100%; border-radius: 16px; display: grid; place-items: center; background: var(--chip); color: var(--ink-3); transition: background .3s, color .3s, transform .3s var(--spring); }
 .tg:active { transform: scale(.88); }
 .tg.on { background: var(--accent-soft); color: var(--accent); }
@@ -362,6 +364,8 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
     <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
     <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.4 1 2.5h6c0-1.1.4-1.9 1-2.5A6 6 0 0 0 12 3Z"/></symbol>
     <symbol id="i-bulb-off" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.4 1 2.5h6c0-1.1.4-1.9 1-2.5A6 6 0 0 0 12 3Z"/><path d="M4 4l16 16"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-film" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v14M17 5v14M3 10h4M3 14h4M17 10h4M17 14h4"/></symbol>
     <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></symbol>
     <symbol id="i-cube" viewBox="0 0 24 24"><path d="M12 3 4 7.5v9L12 21l8-4.5v-9L12 3ZM4 7.5 12 12l8-4.5M12 12v9"/></symbol>
     <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3c.6 4.6 2.4 6.4 7 7-4.6.6-6.4 2.4-7 7-.6-4.6-2.4-6.4-7-7 4.6-.6 6.4-2.4 7-7Z"/></symbol>
@@ -442,6 +446,7 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
         <button class="tg on" id="tgSnap" aria-label="Привязка" title="Привязка к стенам"><svg class="ico"><use href="#i-magnet"/></svg></button>
         <button class="tg on" id="tgShadows" aria-label="Тени" title="Тени"><svg class="ico"><use href="#i-shadow"/></svg></button>
         <button class="tg on" id="tgRefl" aria-label="Отражения" title="Отражения на полу"><svg class="ico"><use href="#i-refl"/></svg></button>
+        <button class="tg" id="btnDemo" aria-label="Показать возможности" title="Показать возможности"><svg class="ico"><use href="#i-film"/></svg></button>
         <button class="tg danger" id="btnReset" aria-label="Исходная расстановка" title="Исходная расстановка"><svg class="ico"><use href="#i-reset"/></svg></button>
       </div>
     </section>
@@ -474,6 +479,7 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
   </div>
 </nav>
 
+<button class="orb glass demoskip" id="demoSkip" aria-label="Пропустить" hidden><svg class="ico"><use href="#i-close"/></svg></button>
 <div class="toast glass" id="toast"><span class="msg" id="toastMsg"></span><button id="toastBtn" aria-label="Отменить" hidden><svg class="ico"><use href="#i-undo"/></svg></button></div>
 
 <div class="hello" id="hello">
@@ -585,7 +591,15 @@ scene.environment = makeEnv(renderer);
 /* room masks for point lights: every lamp lights only the room it stands in, so nothing leaks through walls
    (even when the walls are cut away). Injected into the shared shader chunks, so it applies to every material. */
 const ROOM_CLIP = { value: [] };
-T.ShaderChunk.common += '\nvarying vec3 vRoomWP;\n';
+T.ShaderChunk.common += '\nvarying vec3 vRoomWP;\nuniform vec4 uWave;\nuniform vec3 uWaveOld;\n';
+/* a colour change spreads as a wave from the touch point: inside the radius the new colour, outside the old one */
+T.ShaderChunk.color_fragment += [
+  '',
+  'if ( uWave.w > 0.0 ) {',
+  '\tfloat wk = 1.0 - smoothstep( uWave.w - 0.45, uWave.w, distance( vRoomWP, uWave.xyz ) );',
+  '\tdiffuseColor.rgb = mix( uWaveOld, diffuseColor.rgb, wk );',
+  '}',
+].join('\n');
 T.ShaderChunk.worldpos_vertex = T.ShaderChunk.worldpos_vertex.replace('worldPosition = modelMatrix * worldPosition;', 'worldPosition = modelMatrix * worldPosition;\n\tvRoomWP = worldPosition.xyz;');
 T.ShaderChunk.lights_pars_begin = T.ShaderChunk.lights_pars_begin.replace('uniform PointLight pointLights[ NUM_POINT_LIGHTS ];', [
   'uniform PointLight pointLights[ NUM_POINT_LIGHTS ];',
@@ -598,8 +612,34 @@ T.ShaderChunk.lights_pars_begin = T.ShaderChunk.lights_pars_begin.replace('unifo
 ].join('\n'));
 T.ShaderChunk.lights_fragment_begin = T.ShaderChunk.lights_fragment_begin.replace('getPointDirectLightIrradiance( pointLight, geometry, directLight );',
   'getPointDirectLightIrradiance( pointLight, geometry, directLight );\n\t\tdirectLight.color *= roomMask( uRoomClip[ i ], vRoomWP );');
-function withRoomClip(sh) { sh.uniforms.uRoomClip = ROOM_CLIP; }
-T.MeshStandardMaterial.prototype.onBeforeCompile = withRoomClip;
+function waveU(m) {
+  if (!m.userData.wave) { m.userData.wave = { value: new T.Vector4(0, 0, 0, 1e9) }; m.userData.waveOld = { value: new T.Color() }; }
+  return m.userData;
+}
+function withExtras(sh, mat) {
+  sh.uniforms.uRoomClip = ROOM_CLIP;
+  const u = waveU(mat); sh.uniforms.uWave = u.wave; sh.uniforms.uWaveOld = u.waveOld;
+}
+T.MeshStandardMaterial.prototype.onBeforeCompile = function (sh) { withExtras(sh, this); };
+const waves = [];
+function waveColor(m, to, origin, maxR) {
+  if (m.color.equals(to)) return;
+  const u = waveU(m);
+  u.waveOld.value.copy(m.color); m.color.copy(to);
+  u.wave.value.set(origin.x, origin.y, origin.z, .001);
+  for (let i = waves.length - 1; i >= 0; i--) if (waves[i].u === u) waves.splice(i, 1);
+  waves.push({ u, t0: performance.now(), dur: 420 + maxR * 150, R: maxR + .5 });
+  invalidate();
+}
+function updateWaves(now) {
+  if (!waves.length) return false;
+  for (let i = waves.length - 1; i >= 0; i--) {
+    const w = waves[i], k = Math.min(1, (now - w.t0) / w.dur);
+    w.u.wave.value.w = .001 + EASE.out(k) * w.R;
+    if (k >= 1) { w.u.wave.value.w = 1e9; waves.splice(i, 1); }
+  }
+  return true;
+}
 
 const hemi = new T.HemisphereLight(lin('#fffaf2'), lin('#b8ab98'), 0.35);
 scene.add(hemi);
@@ -845,7 +885,7 @@ function wallTex(id) { const k = 'w:' + id; if (!texCache[k]) texCache[k] = texW
 function worldUV(mat) {
   mat.dithering = true;
   mat.onBeforeCompile = (sh) => {
-    withRoomClip(sh);
+    withExtras(sh, mat);
     sh.vertexShader = 'varying float vWY;\n' + sh.vertexShader.replace('#include <begin_vertex>', [
       '#include <begin_vertex>',
       'vec4 wpUV = modelMatrix * vec4(transformed, 1.0);',
@@ -872,7 +912,7 @@ function floorShader(mat, rect) {
   mat.userData.refl = { value: .2 };
   mat.userData.room = { value: new T.Vector4(rect[0], rect[1], rect[2], rect[3]) };
   mat.onBeforeCompile = (sh) => {
-    withRoomClip(sh);
+    withExtras(sh, mat);
     sh.uniforms.tReflect = REFL.tReflect; sh.uniforms.uReflMatrix = REFL.uReflMatrix; sh.uniforms.uReflTexel = REFL.uReflTexel;
     sh.uniforms.uReflOn = REFL.uReflOn; sh.uniforms.uRefl = mat.userData.refl; sh.uniforms.uRoom = mat.userData.room;
     sh.vertexShader = 'uniform mat4 uReflMatrix;\nvarying vec4 vReflUv;\nvarying vec3 vWPosR;\n' + sh.vertexShader.replace('#include <begin_vertex>', [
@@ -1902,13 +1942,14 @@ function syncObj(it) {
   it.obj.position.set(it.vx, it.vy + it.lift, it.vz);
   it.obj.rotation.y = it.vr;
 }
-function setItemColor(it, which, hex, anim = true) {
+function setItemColor(it, which, hex, anim = true, origin) {
   it[which] = hex;
   const m = which === 'a' ? it.matA : it.matB;
   const to = lin(hex);
-  if (!anim) { m.color.copy(to); if (it.def.emB && which === 'b') m.emissive.copy(to); invalidate(); return; }
-  const from = m.color.clone();
-  tween(420, (k) => { m.color.copy(from).lerp(to, k); if (it.def.emB && which === 'b') m.emissive.copy(m.color); });
+  if (it.def.emB && which === 'b') m.emissive.copy(to);
+  if (!anim) { m.color.copy(to); invalidate(); return; }
+  const d = it.def;
+  waveColor(m, to, origin || new T.Vector3(it.vx, it.vy + d.h / 2, it.vz), Math.hypot(d.w, d.d, d.h));
 }
 function footprint(d, x, z, r) {
   const c = Math.abs(Math.cos(r)), s = Math.abs(Math.sin(r));
@@ -1995,9 +2036,9 @@ const KEY = 'kvartira3d-v6';
 function serialize() {
   return { v: 1, rooms: state.rooms, walls: state.walls, items: items.map((it) => ({ uid: it.uid, type: it.type, x: +it.x.toFixed(3), z: +it.z.toFixed(3), r: +it.r.toFixed(4), y: +it.y.toFixed(3), a: it.a, b: it.b, l: it.lit })) };
 }
-function pushHistory() { history.push(JSON.stringify(serialize())); if (history.length > 80) history.shift(); $('#btnUndo').disabled = false; }
+function pushHistory() { if (demoActive) return; history.push(JSON.stringify(serialize())); if (history.length > 80) history.shift(); $('#btnUndo').disabled = false; }
 let saveTimer = 0;
-function save() { clearTimeout(saveTimer); saveTimer = setTimeout(() => store.set(KEY, JSON.stringify(serialize())), 300); }
+function save() { if (demoActive) return; clearTimeout(saveTimer); saveTimer = setTimeout(() => store.set(KEY, JSON.stringify(serialize())), 300); }
 function loadState() {
   const raw = store.get(KEY);
   if (raw) {
@@ -2037,14 +2078,19 @@ function wallStyle(key) {
   const rs = state.rooms[w.room] || DEFAULT_ROOMS.outside;
   return { c: (ov && ov.c) || rs.wall, f: (ov && ov.f) || rs.finish };
 }
-function applyWalls(anim) {
+function roomWave(room) {
+  const r = ROOM[room];
+  if (!r || !r.rects) return { o: new T.Vector3(CX, 1.3, CZ), R: 12 };
+  return { o: new T.Vector3(r.cx, 1.3, r.cz), R: Math.hypot(r.x2 - r.x1, r.z2 - r.z1) / 2 + H };
+}
+function applyWalls(anim, origin) {
   for (const key of Object.keys(wallMats)) {
     const w = wallMats[key], st = wallStyle(key), to = lin(st.c);
     const tex = wallTex(st.f);
     if (w.mat.map !== tex) { w.mat.map = tex; w.mat.needsUpdate = true; }
     if (!anim || w.mat.color.equals(to)) { w.mat.color.copy(to); continue; }
-    const from = w.mat.color.clone();
-    tween(480, (k) => w.mat.color.copy(from).lerp(to, k));
+    const rw = roomWave(w.room);
+    waveColor(w.mat, to, origin || rw.o, origin ? rw.R * 2 : rw.R);
   }
   invalidate();
 }
@@ -2400,6 +2446,7 @@ function panBy(x0, y0, x1, y1) {
 }
 function stopInertia() { inertia = null; }
 canvas.addEventListener('pointerdown', (e) => {
+  if (demoActive) { stopDemo(); return; }
   try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now() });
   stopInertia();
@@ -2535,7 +2582,7 @@ function paintWallAt(x, y) {
   if (!h) return;
   if (h.object.userData.item) {
     const it = h.object.userData.item;
-    pushHistory(); setItemColor(it, 'a', paint.color); save();
+    pushHistory(); setItemColor(it, 'a', paint.color, true, h.point); save();
     pulseAt(x, y);
     toast(dotHtml(`background-color:${paint.color}`) + icon('i-sofa'), true);
     return;
@@ -2550,7 +2597,7 @@ function paintWallAt(x, y) {
   } else {
     state.walls[key] = { c: paint.color, f: paint.finish };
   }
-  applyWalls(true); save();
+  applyWalls(true, h.point); save();
   const el = document.createElement('div'); el.className = 'ripple'; el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.color = paint.color;
   document.body.appendChild(el); setTimeout(() => el.remove(), 700);
   toast(dotHtml(`background-color:${paint.color};background-image:url(${texThumb(wallTex(paint.finish))});background-blend-mode:multiply`) + icon(paint.scope === 'room' ? 'i-room' : 'i-wall'), true);
@@ -2768,6 +2815,7 @@ function moveTabPill() {
   pill.classList.add('on');
 }
 function openTab(tab) {
+  if (demoActive) stopDemo();
   if (sheetOpen && activeTab === tab) { closeSheet(); return; }
   const prev = sheetOpen ? TAB_ORDER.indexOf(activeTab) : -1;
   const body = $('#sheetBody'), h0 = sheetOpen ? body.offsetHeight : 0;
@@ -2919,6 +2967,7 @@ function movePaintDrag(x, y) {
   else if (p.kind === 'finish') { h = pick(x, y, wallMeshes); if (h) hit = wallHit(h); }
   else { h = pick(x, y, pickables.concat(wallMeshes)); if (h) hit = h.object.userData.item ? { type: 'item', item: h.object.userData.item } : wallHit(h); }
   const id = !hit ? null : hit.type === 'floor' ? 'f:' + hit.room : hit.type === 'item' ? 'i:' + hit.item.uid : (paint.scope === 'room' ? 'r:' + hit.room : 'w:' + hit.key);
+  if (h) pdrag.point = h.point.clone();
   pdrag.ghost.classList.toggle('hit', !!hit);
   if (id === pdrag.id) return;
   restorePreview();
@@ -2929,11 +2978,12 @@ function wallHit(h) { const { seg, side } = h.object.userData, key = seg.key + '
 function wallKeysFor(hit) { return paint.scope === 'room' ? Object.keys(wallMats).filter((k) => wallMats[k].room === hit.room) : [hit.key]; }
 function applyPreview(hit) {
   const p = pdrag.payload;
+  const o = pdrag.point || roomWave(hit.room).o;
   if (hit.type === 'wall') for (const k of wallKeysFor(hit)) {
     const m = wallMats[k].mat;
-    if (p.kind === 'color') fadeColor(m, lin(p.value)); else m.map = wallTex(p.value);
+    if (p.kind === 'color') waveColor(m, lin(p.value), o, roomWave(hit.room).R * 2); else m.map = wallTex(p.value);
   }
-  if (hit.type === 'item') fadeColor(hit.item.matA, lin(p.value));
+  if (hit.type === 'item') { const d = hit.item.def; waveColor(hit.item.matA, lin(p.value), o, Math.hypot(d.w, d.d, d.h)); }
   if (hit.type === 'floor') {
     const f = FLOORS.find((q) => q.id === p.value), m = ROOM[hit.room].floor.material;
     m.map = floorTex(f.id); m.roughness = f.rough; m.userData.refl.value = f.refl;
@@ -2944,8 +2994,9 @@ function applyPreview(hit) {
 function restorePreview() {
   const hit = pdrag && pdrag.hit;
   if (!hit) return;
-  if (hit.type === 'wall') for (const k of wallKeysFor(hit)) { const st = wallStyle(k); fadeColor(wallMats[k].mat, lin(st.c)); wallMats[k].mat.map = wallTex(st.f); }
-  if (hit.type === 'item' && !hit.item.dying) fadeColor(hit.item.matA, lin(hit.item.a));
+  const o = pdrag.point || roomWave(hit.room).o;
+  if (hit.type === 'wall') for (const k of wallKeysFor(hit)) { const st = wallStyle(k); waveColor(wallMats[k].mat, lin(st.c), o, roomWave(hit.room).R * 2); wallMats[k].mat.map = wallTex(st.f); }
+  if (hit.type === 'item' && !hit.item.dying) { const d = hit.item.def; waveColor(hit.item.matA, lin(hit.item.a), o, Math.hypot(d.w, d.d, d.h)); }
   if (hit.type === 'floor') {
     const f = FLOORS.find((q) => q.id === state.rooms[hit.room].floor) || FLOORS[0], m = ROOM[hit.room].floor.material;
     m.map = floorTex(f.id); m.roughness = f.rough; m.userData.refl.value = f.refl; fadeColor(m, new T.Color(1, 1, 1));
@@ -2964,10 +3015,9 @@ function endPaintDrag(commit, x, y) {
         for (const k of Object.keys(state.walls)) if (wallMats[k] && wallMats[k].room === hit.room) delete state.walls[k];
       } else { const cur = wallStyle(hit.key); state.walls[hit.key] = { c: c || cur.c, f: f || cur.f }; }
       if (c) paint.color = c; if (f) paint.finish = f;
-      for (const k of wallKeysFor(hit)) colorFades.delete(wallMats[k].mat);
-      applyWalls(true);
+      applyWalls(true, pdrag.point);
     }
-    if (hit.type === 'item') { colorFades.delete(hit.item.matA); setItemColor(hit.item, 'a', p.value); if (hit.item === selected) updateSelbar(); }
+    if (hit.type === 'item') { setItemColor(hit.item, 'a', p.value, true, pdrag.point); if (hit.item === selected) updateSelbar(); }
     if (hit.type === 'floor') { state.rooms[hit.room].floor = p.value; paint.floor = p.value; applyFloors(null); }
     save();
     const el = document.createElement('div'); el.className = 'ripple'; el.style.left = x + 'px'; el.style.top = y + 'px';
@@ -3213,6 +3263,7 @@ function updatePlay() { $('#todPlay').classList.toggle('on', timePlay); }
   let sd = null;
   const todAt = (x) => { const r = skyEl.getBoundingClientRect(); return clamp((x - r.left) / r.width, 0, .9999) * 24; };
   skyEl.addEventListener('pointerdown', (e) => {
+    if (demoActive) { stopDemo(); return; }
     try { skyEl.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
     const r = skyEl.getBoundingClientRect();
     sd = { x0: e.clientX, onKnob: Math.abs(e.clientX - (r.left + tod / 24 * r.width)) < 30, moved: false };
@@ -3267,6 +3318,75 @@ function renderReflection() {
   for (const b of blobs) b.visible = true;
   ring.visible = ringVis;
 }
+
+/* ------------------------------------------------------------------ demo tour: a flying camera shows the main features, then everything is put back */
+let demoActive = false, demoToken = 0, demoTimer = 0, demoWake = null;
+const dwait = (ms) => new Promise((r) => { demoWake = r; demoTimer = setTimeout(r, ms); });
+function stopDemo() {
+  if (!demoActive) return;
+  demoActive = false;
+  clearTimeout(demoTimer); if (demoWake) { const w = demoWake; demoWake = null; w(); }
+}
+async function runDemo() {
+  if (demoActive) return;
+  demoActive = true; const tok = ++demoToken;
+  const alive = () => demoActive && demoToken === tok;
+  const step = async (ms) => { await dwait(ms); return alive(); };
+  const snap = JSON.stringify(serialize()), tod0 = tod;
+  closeSheet(); if (selected) deselect(); timePlay = false; updatePlay();
+  $('#hello').classList.remove('show'); $('#demoSkip').hidden = false;
+  try {
+    goTime(13, true); fitAll();
+    if (!await step(2300)) return;
+    // pick up the sofa and carry it across the living room
+    const sofa = items.find((i) => i.type === 'sofa');
+    flyTo({ tx: 3.6, tz: -3.4, dist: 7.5, yaw: -.5, pitch: .9 }, 1400);
+    if (!await step(1500)) return;
+    if (sofa) {
+      select(sofa);
+      tween(250, (k) => { sofa.lift = .08 * k; });
+      if (!await step(450)) return;
+      const x0 = sofa.x, z0 = sofa.z;
+      tween(1500, (k) => { sofa.x = x0 + .9 * k; sofa.z = z0 + .45 * Math.sin(k * PI); }, EASE.inOut);
+      if (!await step(1650)) return;
+      tween(300, (k) => { sofa.lift = .08 * (1 - k); });
+      if (!await step(600)) return;
+      deselect();
+    }
+    // paint the walls: the colour rolls across the room from the far wall
+    flyTo({ tx: 3.9, tz: -2.7, dist: 8.5, yaw: -.1, pitch: .72 }, 1200);
+    if (!await step(1300)) return;
+    state.rooms.living.wall = '#8fa7b3'; applyWalls(true, new T.Vector3(3.9, 1.3, -5.24));
+    if (!await step(1900)) return;
+    state.rooms.living.floor = 'walnut'; applyFloors('living');
+    if (!await step(1500)) return;
+    // evening falls, the chandelier blinks
+    flyTo({ dist: 11, pitch: .95 }, 1500); goTime(21.2, true);
+    if (!await step(2700)) return;
+    const ch = items.find((i) => i.type === 'chandelier');
+    if (ch) { toggleLight(ch); if (!await step(900)) return; toggleLight(ch); if (!await step(900)) return; }
+    // the bedroom lamp
+    flyTo({ tx: -2.6, tz: -7.8, dist: 7.5, yaw: .4, pitch: .85 }, 1500);
+    if (!await step(1600)) return;
+    const lamp = items.find((i) => i.type === 'floorLamp' && i.x < 0);
+    if (lamp) { toggleLight(lamp); if (!await step(900)) return; toggleLight(lamp); if (!await step(700)) return; }
+    fitAll();
+    await step(1100);
+  } finally {
+    if (demoToken === tok) {
+      demoActive = false; $('#demoSkip').hidden = true;
+      tweens.length = 0;
+      for (const it of items) it.lift = 0;
+      if (selected) deselect();
+      applySnapshot(JSON.parse(snap), true);
+      goTime(tod0, true);
+      fitAll();
+      if (!store.get(KEY + ':hello')) setTimeout(() => $('#hello').classList.add('show'), 700);
+    }
+  }
+}
+$('#demoSkip').addEventListener('click', stopDemo);
+$('#btnDemo').addEventListener('click', () => { closeSheet(); runDemo(); });
 
 /* ------------------------------------------------------------------ boot */
 function resize() {
@@ -3339,7 +3459,7 @@ async function boot() {
   last = performance.now();
   requestAnimationFrame(frame);
   setTimeout(() => $('#loading').classList.add('done'), 150);
-  if (!store.get(KEY + ':hello')) setTimeout(() => $('#hello').classList.add('show'), 1100);
+  if (!store.get(KEY + ':hello')) setTimeout(runDemo, 2400);
 }
 // intro: start high above, then fly in once everything is built
 want.pitch = .96;
@@ -3361,6 +3481,7 @@ function frame(now) {
   active = updateWalls(dt) || active;
   active = updateItems(dt) || active;
   active = updateFades(dt) || active;
+  active = updateWaves(now) || active;
   if (timePlay) { tod = (tod + dt * 24 / 60) % 24; applyTime(); active = true; }
   if (lightsDirty || (drag && drag.it.def.light)) assignLights();
   if (shadowDirty && settings.shadows) {
@@ -3383,7 +3504,7 @@ boot().catch((e) => {
 });
 $('#helloGo').addEventListener('click', () => { $('#hello').classList.remove('show'); store.set(KEY + ':hello', '1'); });
 
-window.__apt = { renderer, setTime: (t) => { tod = t; applyTime(); }, items, segs, cam, want, state: () => state, select, openTab, DEFS, invalidate, collides, wallRects, beginDrag, dragMove, endDrag, groundAt, camera };
+window.__apt = { renderer, runDemo, stopDemo, demo: () => demoActive, applyWalls, waves, setTime: (t) => { tod = t; applyTime(); }, items, segs, cam, want, state: () => state, select, openTab, DEFS, invalidate, collides, wallRects, beginDrag, dragMove, endDrag, groundAt, camera };
 })();
 </script>
 </body>
