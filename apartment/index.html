@@ -71,9 +71,9 @@ svg { display: block; }
 #stage { position: fixed; inset: 0; background: radial-gradient(130% 90% at 50% 0%, var(--sky-top), var(--sky-bottom) 70%); overflow: hidden; }
 .stars { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
 .stars canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-.stars canvas + canvas { animation: twinkle 3.6s ease-in-out infinite alternate; }
+.stars.on canvas + canvas { animation: twinkle 3.6s ease-in-out infinite alternate; }
 @keyframes twinkle { from { opacity: .15; } to { opacity: 1; } }
-.celestial { position: absolute; left: 0; top: 0; width: 70vmin; height: 70vmin; margin: -35vmin 0 0 -35vmin; border-radius: 50%; pointer-events: none; opacity: 0; mix-blend-mode: screen; }
+.celestial { position: absolute; left: 0; top: 0; width: 70vmin; height: 70vmin; margin: -35vmin 0 0 -35vmin; border-radius: 50%; pointer-events: none; opacity: 0; }
 #c { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
 .vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(8, 14, 20, .2)); }
 #labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
@@ -196,6 +196,7 @@ svg { display: block; }
 @keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
 .sw.custom { background: conic-gradient(#e57373, #ffd54f, #81c784, #4fc3f7, #9575cd, #e57373); overflow: visible; }
 .sw.custom input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border-radius: 50%; }
+#wallSwatches { grid-template-columns: repeat(9, 1fr); gap: 7px; }
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 10px; }
 .tiles.strip { display: flex; overflow-x: auto; margin: 0 -14px; padding: 4px 14px 6px; scrollbar-width: none; }
 .tiles.strip::-webkit-scrollbar { display: none; }
@@ -256,6 +257,14 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
 .cprow .slot .ico { width: 18px; height: 18px; }
 .cprow .swatches { flex: 1; grid-template-columns: repeat(auto-fill, minmax(28px, 1fr)); gap: 7px; }
 
+.ghost { position: fixed; left: 0; top: 0; z-index: 60; width: 58px; height: 58px; margin: -29px 0 0 -29px; pointer-events: none; }
+.ghost i { position: absolute; inset: 0; border-radius: 50% 50% 50% 7px; transform: rotate(-45deg); background-size: 220%; background-position: center;
+  box-shadow: 0 14px 28px rgba(0,0,0,.34), inset 0 0 0 3px rgba(255,255,255,.92), inset 0 -10px 14px rgba(0,0,0,.12); animation: ghostIn .35s var(--spring) both; transition: transform .3s var(--spring), opacity .25s; }
+.ghost.hit i { transform: rotate(-45deg) scale(1.16); }
+.ghost.out i { transform: rotate(-45deg) scale(.2); opacity: 0; }
+@keyframes ghostIn { from { transform: rotate(-45deg) scale(.3); opacity: 0; } }
+.sheet.open.peek { transform: translateY(calc(100% - 70px)) scale(.97); opacity: .5; transition: transform .45s var(--ease), opacity .3s; }
+.selbar.show.peek { transform: translate(-50%, 40px) scale(.95); opacity: .45; }
 .toast {
   position: fixed; z-index: 40; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 68px);
   transform: translate(-50%, -14px) scale(.92); opacity: 0; pointer-events: none; transition: transform .45s var(--spring), opacity .25s;
@@ -526,7 +535,7 @@ renderer.setClearColor(0x000000, 0);
 const MAX_ANISO = Math.min(8, renderer.capabilities.getMaxAnisotropy());
 
 const scene = new T.Scene();
-const camera = new T.PerspectiveCamera(40, 1, 0.1, 300);
+const camera = new T.PerspectiveCamera(40, 1, 0.4, 140);
 
 function makeEnv(r) {
   const pm = new T.PMREMGenerator(r);
@@ -831,31 +840,31 @@ function std(hex, rough = .7, metal = 0) { return new T.MeshStandardMaterial({ c
 
 /* ------------------------------------------------------------------ plan */
 const ROOMS = [
-  { id: 'hall', name: 'Коридор', x1: 0, x2: 2.0, z1: -10.4, z2: 0 },
-  { id: 'living', name: 'Гостиная', x1: 2.0, x2: 7.6, z1: -6.0, z2: 0 },
-  { id: 'bed1', name: 'Малая спальня', x1: 2.0, x2: 7.6, z1: -9.0, z2: -6.0 },
-  { id: 'kitchen', name: 'Кухня', x1: 2.0, x2: 7.6, z1: -12.8, z2: -9.0 },
-  { id: 'bath', name: 'Ванная', x1: 0, x2: 2.0, z1: -12.8, z2: -10.4 },
-  { id: 'bed2', name: 'Спальня', x1: -5.4, x2: 0, z1: -10.4, z2: -6.4 },
-  { id: 'balcony', name: 'Балкон', x1: 7.6, x2: 9.0, z1: -12.6, z2: -9.4 },
+  { id: 'hall', name: 'Коридор', x1: 0, x2: 1.6, z1: -9.4, z2: 0 },
+  { id: 'living', name: 'Гостиная', x1: 1.6, x2: 6.0, z1: -4.8, z2: 0 },
+  { id: 'bed1', name: 'Малая спальня', x1: 1.6, x2: 6.0, z1: -8.2, z2: -4.8 },
+  { id: 'kitchen', name: 'Кухня', x1: 1.6, x2: 6.0, z1: -11.0, z2: -8.2 },
+  { id: 'bath', name: 'Ванная', x1: -0.9, x2: 1.6, z1: -11.8, z2: -9.4 },
+  { id: 'bed2', name: 'Спальня', x1: -5.4, x2: 0, z1: -9.4, z2: -5.9 },
+  { id: 'balcony', name: 'Балкон', x1: 6.0, x2: 7.4, z1: -11.0, z2: -8.4 },
 ];
 const ROOM = {}; ROOMS.forEach((r) => { ROOM[r.id] = r; r.cx = (r.x1 + r.x2) / 2; r.cz = (r.z1 + r.z2) / 2; r.area = (r.x2 - r.x1) * (r.z2 - r.z1); });
 ROOM.outside = { id: 'outside', name: 'Фасад' };
-const BOUNDS = { x0: -5.6, x1: 9.2, z0: -13.0, z1: 0.3 };
+const BOUNDS = { x0: -5.6, x1: 7.6, z0: -12.0, z1: 0.3 };
 const CX = (BOUNDS.x0 + BOUNDS.x1) / 2, CZ = (BOUNDS.z0 + BOUNDS.z1) / 2;
 const H = 2.7, LOW = 0.3, TR = 0.07, TX = 0.14, RAIL = 1.05;
 const OPENINGS = [
-  { o: 'h', at: 0, from: 0.55, to: 1.45, type: 'entry', top: 2.1 },
-  { o: 'v', at: 2.0, from: -3.5, to: -1.9, type: 'door2', into: 'living', top: 2.2 },
-  { o: 'v', at: 2.0, from: -8.3, to: -7.4, type: 'door', into: 'bed1', hinge: 'to', top: 2.1 },
-  { o: 'v', at: 2.0, from: -10.2, to: -9.3, type: 'door', into: 'kitchen', hinge: 'to', top: 2.1 },
-  { o: 'h', at: -10.4, from: 0.6, to: 1.4, type: 'door', into: 'bath', hinge: 'from', top: 2.1 },
-  { o: 'v', at: 0, from: -10.15, to: -9.25, type: 'door', into: 'bed2', hinge: 'from', top: 2.1 },
-  { o: 'v', at: 7.6, from: -4.3, to: -1.9, type: 'window', bottom: .8, top: 2.3 },
-  { o: 'v', at: 7.6, from: -8.2, to: -6.8, type: 'window', bottom: .85, top: 2.25 },
-  { o: 'v', at: 7.6, from: -10.4, to: -9.6, type: 'bdoor', top: 2.2 },
-  { o: 'v', at: 7.6, from: -12.3, to: -10.8, type: 'window', bottom: .9, top: 2.25 },
-  { o: 'v', at: -5.4, from: -9.2, to: -7.6, type: 'window', bottom: .85, top: 2.25 },
+  { o: 'h', at: 0, from: 0.45, to: 1.25, type: 'entry', top: 2.1 },
+  { o: 'v', at: 1.6, from: -3.4, to: -2.0, type: 'door2', into: 'living', top: 2.2 },
+  { o: 'v', at: 1.6, from: -7.1, to: -6.2, type: 'door', into: 'bed1', hinge: 'to', top: 2.1 },
+  { o: 'v', at: 1.6, from: -9.2, to: -8.35, type: 'door', into: 'kitchen', hinge: 'to', top: 2.1 },
+  { o: 'h', at: -9.4, from: 0.1, to: 0.85, type: 'door', into: 'bath', hinge: 'from', top: 2.1 },
+  { o: 'v', at: 0, from: -9.2, to: -8.35, type: 'door', into: 'bed2', hinge: 'from', top: 2.1 },
+  { o: 'v', at: 6.0, from: -3.6, to: -1.4, type: 'window', bottom: .8, top: 2.3 },
+  { o: 'v', at: 6.0, from: -7.3, to: -5.9, type: 'window', bottom: .85, top: 2.25 },
+  { o: 'v', at: 6.0, from: -10.85, to: -10.05, type: 'bdoor', top: 2.2 },
+  { o: 'v', at: 6.0, from: -9.85, to: -8.5, type: 'window', bottom: .9, top: 2.25 },
+  { o: 'v', at: -5.4, from: -9.0, to: -7.5, type: 'window', bottom: .85, top: 2.25 },
 ];
 function roomAt(x, z) {
   for (const r of ROOMS) if (x > r.x1 + 1e-6 && x < r.x2 - 1e-6 && z > r.z1 + 1e-6 && z < r.z2 - 1e-6) return r.id;
@@ -920,7 +929,7 @@ function buildPlan() {
     if (seg) seg.ops.push(op);
   }
 
-  const addPiece = (seg, mats, rect, y0, y1, side) => {
+  const addPiece = (seg, mats, rect, y0, y1, side, dy = 0) => {
     const w = rect.x1 - rect.x0, d = rect.z1 - rect.z0;
     if (w <= 1e-4 || d <= 1e-4) return;
     const g = boxGeo(w, 1, d).clone(); g.translate(0, .5, 0);
@@ -930,14 +939,14 @@ function buildPlan() {
     m.castShadow = !mats.transparent; m.receiveShadow = true;
     m.userData = { seg, side };
     wallGroup.add(m);
-    seg.pieces.push({ mesh: m, y0, y1 });
+    seg.pieces.push({ mesh: m, y0, y1, dy });
     if (side !== undefined) wallMeshes.push(m);
     if (y0 === 0 && side !== undefined) wallRects.push({ x0: rect.x0, x1: rect.x1, z0: rect.z0, z1: rect.z1, top: y1 });
   };
   const addRotPiece = (seg, geo, mat, x, z, ry, y0, y1, cast = true) => {
     const m = new T.Mesh(geo, mat);
     m.position.set(x, y0, z); m.rotation.y = ry; m.scale.y = y1 - y0; m.castShadow = cast; m.receiveShadow = true;
-    wallGroup.add(m); seg.pieces.push({ mesh: m, y0, y1 });
+    wallGroup.add(m); seg.pieces.push({ mesh: m, y0, y1, dy: 0 });
   };
 
   for (const seg of segs) {
@@ -974,22 +983,22 @@ function buildPlan() {
       if (isDoor) {
         for (const s of [1, -1]) {
           const t = thick(seg, s) + .016;
-          addPiece(seg, MAT.trim, rectOf(seg.o, seg.at, op.from - .07, op.from, s, t), 0, op.top + .07);
-          addPiece(seg, MAT.trim, rectOf(seg.o, seg.at, op.to, op.to + .07, s, t), 0, op.top + .07);
-          addPiece(seg, MAT.trim, rectOf(seg.o, seg.at, op.from - .07, op.to + .07, s, t), op.top, op.top + .07);
+          addPiece(seg, MAT.trim, rectOf(seg.o, seg.at, op.from - .07, op.from + .012, s, t), 0, op.top + .07, undefined, .004);
+          addPiece(seg, MAT.trim, rectOf(seg.o, seg.at, op.to - .012, op.to + .07, s, t), 0, op.top + .07, undefined, .004);
+          addPiece(seg, MAT.trim, rectOf(seg.o, seg.at, op.from - .07, op.to + .07, s, t), op.top - .012, op.top + .07, undefined, .004);
         }
       }
       if (op.type === 'window' || op.type === 'bdoor') {
         const fr = (a, b, y0, y1, mat = MAT.frame, half = .035) => {
           const p = [seg.at - half, seg.at + half];
           const r = seg.o === 'h' ? { x0: a, x1: b, z0: p[0], z1: p[1] } : { x0: p[0], x1: p[1], z0: a, z1: b };
-          addPiece(seg, mat, r, y0, y1);
+          addPiece(seg, mat, r, y0, y1, undefined, .003);
         };
         const fw = .06;
-        fr(op.from, op.from + fw, bottom, op.top);
-        fr(op.to - fw, op.to, bottom, op.top);
-        fr(op.from, op.to, op.top - fw, op.top);
-        fr(op.from, op.to, bottom, bottom + fw);
+        fr(op.from - .012, op.from + fw, bottom, op.top);
+        fr(op.to - fw, op.to + .012, bottom, op.top);
+        fr(op.from, op.to, op.top - fw, op.top + .012);
+        fr(op.from, op.to, Math.max(0, bottom - .012), bottom + fw);
         if (op.type === 'bdoor') { fr(op.from, op.to, 0, .45, MAT.frame, .03); fr(op.from, op.to, 1.0, 1.04); }
         if (op.to - op.from > 1.0 && op.type === 'window') fr((op.from + op.to) / 2 - .03, (op.from + op.to) / 2 + .03, bottom, op.top);
         fr(op.from + fw, op.to - fw, bottom + fw, op.top - fw, MAT.winGlass, .006);
@@ -997,7 +1006,7 @@ function buildPlan() {
           for (const s of [1, -1]) {
             if (!seg.sides[s]) continue;
             const t = thick(seg, s);
-            addPiece(seg, MAT.sill, rectOf(seg.o, seg.at, op.from - .05, op.to + .05, s, t + .2), bottom - .04, bottom);
+            addPiece(seg, MAT.sill, rectOf(seg.o, seg.at, op.from - .06, op.to + .06, s, t + .2), bottom - .03, bottom + .014);
           }
         }
       }
@@ -1111,6 +1120,7 @@ const SH = {
   mirror: std('#d3e1e7', .06, .55), soil: std('#4a3a2c', 1), leaf: std('#4b7a44', .7), leaf2: std('#669652', .7), stem: std('#6b5a3e', .8),
   warm: new T.MeshStandardMaterial({ color: lin('#fff6e2'), emissive: lin('#ffd7a0'), emissiveIntensity: 1.1, roughness: .6 }),
   burner: std('#46474b', .5, .3), wood: std('#a57c55', .6), rattan: std('#b48f5f', .85),
+  tulle: new T.MeshStandardMaterial({ color: lin('#fbfaf6'), roughness: .9, transparent: true, opacity: .4, depthWrite: false, side: T.DoubleSide }),
   screen: new T.MeshStandardMaterial({ color: lin('#0b0c0f'), roughness: .2, metalness: .2, emissive: lin('#ffffff'), emissiveMap: screenTex(3), emissiveIntensity: .75 }),
   art: [0, 1, 2].map((i) => new T.MeshStandardMaterial({ color: lin('#ffffff'), roughness: .8, map: artTex(i) })),
 };
@@ -1218,21 +1228,21 @@ def('tvStand', { name: 'Тумба под ТВ', cat: 'living', w: 1.6, d: .45, 
   const w = d.w, D = d.d;
   legs4(g, w - .1, D - .1, .08, SH.black, .015);
   B(g, w, .42, D, 0, .08, 0, A);
-  B(g, w * .34 - .02, .36, .012, 0, .11, D / 2 + .001, SH.dark);
+  B(g, w * .34 - .02, .36, .012, 0, .11, D / 2 + .004, SH.dark);
   for (const s of [-1, 1]) { B(g, w * .33, .38, .018, s * w / 3, .1, D / 2 + .009, Bm); B(g, .16, .01, .02, s * w / 3, .4, D / 2 + .028, SH.chrome); }
 } });
 def('tv', { name: 'Телевизор 55″', cat: 'living', w: 1.24, d: .25, h: .78, small: true, a: '#1a1b1e', b: '#3a3b3f', la: 'Корпус', lb: 'Подставка', build(g, A, Bm, R, d) {
   for (const s of [-1, 1]) { B(g, .05, .015, .24, s * .45, 0, 0, Bm); B(g, .03, .07, .03, s * .45, 0, 0, Bm); }
   B(g, d.w, .72, .045, 0, .06, 0, A);
   B(g, .4, .02, .05, 0, .06, 0, SH.chrome);
-  screen(g, d.w - .03, .69, 0, .06 + .36, .0235);
+  screen(g, d.w - .03, .69, 0, .06 + .36, .0255);
 } });
-def('rug', { name: 'Ковёр', cat: 'living', w: 2.4, d: 1.7, h: .012, rug: true, a: '#d9cfbf', b: '#a89a85', la: 'Поле', lb: 'Рисунок', build(g, A, Bm, R, d) {
-  RB(g, d.w, .01, d.d, 0, 0, 0, A, .004, 1);
+def('rug', { name: 'Ковёр', cat: 'living', w: 2.4, d: 1.7, h: .016, rug: true, a: '#d9cfbf', b: '#a89a85', la: 'Поле', lb: 'Рисунок', build(g, A, Bm, R, d) {
+  RB(g, d.w, .008, d.d, 0, 0, 0, A, .004, 1);
   B(g, d.w - .16, .011, d.d - .16, 0, 0, 0, Bm);
-  B(g, d.w - .26, .012, d.d - .26, 0, 0, 0, A);
-  B(g, d.w - .6, .013, .04, 0, 0, 0, Bm);
-  B(g, .04, .013, d.d - .6, 0, 0, 0, Bm);
+  B(g, d.w - .26, .014, d.d - .26, 0, 0, 0, A);
+  B(g, d.w - .6, .017, .04, 0, 0, 0, Bm);
+  B(g, .04, .0172, d.d - .6, 0, 0, 0, Bm);
 } });
 
 def('stBooks', { name: 'Стенка: книжный модуль', cat: 'wall', w: .9, d: .45, h: 2.3, a: '#7b5a43', b: '#efe9de', la: 'Корпус', lb: 'Фасады', build(g, A, Bm, R, d) {
@@ -1410,7 +1420,7 @@ def('computer', { name: 'Компьютер: монитор и клавиату�
   RB(g, .24, .015, .18, 0, 0, -.15, A, .006, 1);
   B(g, .04, .3, .025, 0, .015, -.17, A);
   B(g, .64, .38, .028, 0, .14, -.14, A);
-  screen(g, .62, .35, 0, .14 + .19, -.14 + .0145);
+  screen(g, .62, .35, 0, .14 + .19, -.14 + .0165);
   RB(g, .44, .02, .14, -.05, 0, .12, Bm, .008, 1);
   B(g, .41, .006, .11, -.05, .019, .12, SH.dark);
   RB(g, .06, .03, .1, .3, 0, .13, Bm, .015, 2);
@@ -1428,7 +1438,7 @@ def('kBase', { name: 'Кухня: нижний модуль', cat: 'kitchen', w:
 def('kSink', { name: 'Кухня: мойка', cat: 'kitchen', w: .8, d: .6, h: .9, surface: .9, a: '#a8b8ad', b: '#cdb491', la: 'Фасады', lb: 'Столешница', build(g, A, Bm, R, d) {
   kBase(g, A, Bm, d, 2);
   B(g, .52, .004, .42, 0, .9, .02, SH.chrome);
-  B(g, .46, .005, .36, 0, .9, .02, SH.metal);
+  B(g, .46, .009, .36, 0, .9, .02, SH.metal);
   C(g, .016, .02, .26, .0, .9, -.23, SH.chrome, 12);
   B(g, .025, .025, .18, 0, 1.13, -.15, SH.chrome);
 } });
@@ -1441,7 +1451,7 @@ def('kStove', { name: 'Кухня: плита', cat: 'kitchen', w: .6, d: .6, h:
   B(g, w - .04, .1, .012, 0, .11, D / 2 - .02 + .006, A);
   B(g, w, .04, D, 0, .86, 0, Bm);
   B(g, w - .04, .006, D - .06, 0, .9, 0, SH.dark);
-  for (const [x, z, r] of [[-.14, -.13, .09], [.14, -.13, .07], [-.14, .13, .07], [.14, .13, .09]]) C(g, r, r, .002, x, .906, z, SH.burner, 24);
+  for (const [x, z, r] of [[-.14, -.13, .09], [.14, -.13, .07], [-.14, .13, .07], [.14, .13, .09]]) C(g, r, r, .004, x, .906, z, SH.burner, 24);
 } });
 function kBase(g, A, Bm, d, nd) {
   const w = d.w, D = d.d;
@@ -1533,6 +1543,53 @@ def('washer', { name: 'Стиральная машина', cat: 'bath', w: .6, d
   const k = C(g, .03, .03, .02, .2, .78, D / 2 + .01, SH.chrome, 16); k.rotation.x = HP; k.position.set(.2, .78, D / 2 + .01);
 } });
 
+def('showerCabin', { name: 'Душевая кабина', cat: 'bath', w: .9, d: .9, h: 2.05, a: '#f8f7f3', b: '#cfd3d6', ra: .12, rb: .2, mb: .9, la: 'Поддон', lb: 'Профиль', build(g, A, Bm, R, d) {
+  const w = d.w, D = d.d;
+  RB(g, w, .12, D, 0, 0, 0, A, .025, 2);
+  B(g, w - .12, .01, D - .12, 0, .12, 0, std('#e9eceb', .2));
+  C(g, .035, .035, .004, 0, .131, 0, SH.metal, 16);
+  B(g, w - .05, 1.86, .008, -.012, .14, D / 2 - .02, SH.glass);
+  B(g, .008, 1.86, D - .05, w / 2 - .02, .14, -.012, SH.glass);
+  for (const [x, z] of [[w / 2 - .02, D / 2 - .02], [-w / 2 + .02, D / 2 - .02], [w / 2 - .02, -D / 2 + .02]]) B(g, .03, 1.9, .03, x, .12, z, Bm);
+  B(g, w, .03, .03, 0, 2.02, D / 2 - .02, Bm); B(g, .03, .03, D, w / 2 - .02, 2.02, 0, Bm);
+  B(g, .02, .5, .03, .05, .9, D / 2, Bm);
+  C(g, .012, .012, 1.1, -w / 2 + .1, .9, -D / 2 + .05, Bm, 10);
+  const head = C(g, .09, .09, .02, -w / 2 + .18, 1.95, -D / 2 + .16, Bm, 22); head.rotation.x = .25;
+  B(g, .02, .02, .14, -w / 2 + .1, 1.97, -D / 2 + .1, Bm);
+  B(g, .12, .14, .02, -w / 2 + .14, 1.05, -D / 2 + .012, Bm);
+} });
+def('bathCabinet', { name: 'Шкафчик навесной', cat: 'bath', w: .6, d: .3, h: .7, elev: 1.35, wall: true, a: '#f4f2ee', b: '#c9a77c', la: 'Корпус', lb: 'Фасад', build(g, A, Bm, R, d) {
+  const w = d.w, D = d.d;
+  B(g, w, d.h, D - .02, 0, 0, -.01, A);
+  B(g, w / 2 - .006, d.h - .01, .018, -w / 4, .005, D / 2 - .02 + .009, Bm);
+  B(g, w / 2 - .006, d.h - .01, .018, w / 4, .005, D / 2 - .02 + .009, Bm);
+  for (const s2 of [-1, 1]) B(g, .012, .1, .022, s2 * .03, .3, D / 2 + .01, SH.chrome);
+} });
+def('radiator', { name: 'Батарея чугунная', cat: 'decor', w: 1.0, d: .14, h: .58, elev: .1, wall: true, a: '#ecebe5', b: '#b9bdc1', ra: .55, la: 'Краска', lb: 'Кран', build(g, A, Bm, R, d) {
+  const n = 10, sw = d.w / n, h = d.h;
+  for (let i = 0; i < n; i++) {
+    const x = -d.w / 2 + sw * (i + .5);
+    RB(g, sw - .016, h - .02, .05, x, .01, -.032, A, .022, 2);
+    RB(g, sw - .016, h - .02, .05, x, .01, .03, A, .022, 2);
+    RB(g, sw - .006, .085, .12, x, h - .095, 0, A, .035, 2);
+    RB(g, sw - .006, .085, .12, x, .01, 0, A, .035, 2);
+  }
+  for (const y of [h - .05, .05]) { const pp = C(g, .016, .016, .14, -d.w / 2 - .06, y - .07, 0, Bm, 10); pp.rotation.z = HP; pp.position.set(-d.w / 2 - .06, y, 0); }
+  C(g, .03, .03, .04, -d.w / 2 - .12, h - .07, 0, Bm, 12);
+  C(g, .014, .014, d.elev || .1, -d.w / 2 - .13, -.1, 0, Bm, 8);
+} });
+function curtains(g, A, Bm, R, d) {
+  const w = d.w, z0 = -d.d / 2, pw = .34, folds = 6;
+  const rod = C(g, .012, .012, w + .12, 0, 0, 0, Bm, 10); rod.rotation.z = HP; rod.position.set(0, d.h - .04, z0 + .14);
+  for (const s2 of [-1, 1]) S(g, .025, s2 * (w / 2 + .06), d.h - .04, z0 + .14, Bm);
+  for (const s2 of [-1, 1]) for (let i = 0; i < folds; i++) {
+    const c = C(g, .034, .04, d.h - .1, s2 * (w / 2 - .035 - i * (pw / folds)), .05, z0 + .08 + (i % 2 ? .018 : -.012), A, 10);
+    c.scale.z = .85;
+  }
+  B(g, w - 2 * pw + .04, d.h - .12, .004, 0, .06, z0 + .235, SH.tulle);
+}
+def('curtains', { name: 'Шторы с тюлем', cat: 'decor', w: 2.0, d: .28, h: 2.42, wall: true, a: '#b7a08a', b: '#c9cdd0', ra: .95, la: 'Ткань', lb: 'Карниз', build: curtains });
+def('curtainsWide', { name: 'Шторы широкие', cat: 'decor', w: 2.8, d: .28, h: 2.42, wall: true, a: '#8e9aa6', b: '#c9cdd0', ra: .95, la: 'Ткань', lb: 'Карниз', build: curtains });
 def('plant', { name: 'Растение в кадке', cat: 'decor', w: .5, d: .5, h: 1.3, a: '#4b7a44', b: '#d9d3ca', la: 'Листья', lb: 'Кашпо', build(g, A, Bm, R, d) {
   C(g, .17, .13, .34, 0, 0, 0, Bm, 20);
   C(g, .155, .155, .02, 0, .31, 0, SH.soil, 18);
@@ -1559,16 +1616,16 @@ def('tableLamp', { name: 'Настольная лампа', cat: 'decor', w: .26
   C(g, .085, .13, .18, 0, .27, 0, Bm, 22);
   S(g, .035, 0, .3, 0, SH.warm);
 } });
-def('runner', { name: 'Ковровая дорожка', cat: 'decor', w: .8, d: 3.0, h: .012, rug: true, a: '#6f7f68', b: '#d9cfbf', la: 'Поле', lb: 'Кайма', build(g, A, Bm, R, d) {
-  RB(g, d.w, .01, d.d, 0, 0, 0, A, .004, 1);
+def('runner', { name: 'Ковровая дорожка', cat: 'decor', w: .8, d: 3.0, h: .016, rug: true, a: '#6f7f68', b: '#d9cfbf', la: 'Поле', lb: 'Кайма', build(g, A, Bm, R, d) {
+  RB(g, d.w, .008, d.d, 0, 0, 0, A, .004, 1);
   B(g, d.w - .1, .011, d.d - .1, 0, 0, 0, Bm);
-  B(g, d.w - .18, .012, d.d - .18, 0, 0, 0, A);
-  for (let i = -3; i <= 3; i++) B(g, d.w - .34, .013, .03, 0, 0, i * .38, Bm);
+  B(g, d.w - .18, .014, d.d - .18, 0, 0, 0, A);
+  for (let i = -3; i <= 3; i++) B(g, d.w - .34, .017, .03, 0, 0, i * .38, Bm);
 } });
 def('picture', { name: 'Картина', cat: 'decor', w: .8, d: .04, h: .6, elev: 1.45, wall: true, a: '#2b2c2e', b: '#ffffff', la: 'Рама', lb: 'Паспарту', build(g, A, Bm, R, d) {
   B(g, d.w, d.h, .03, 0, 0, 0, A);
   B(g, d.w - .05, d.h - .05, .002, 0, .025, .016, Bm);
-  const art = new T.Mesh(SCREEN_PLANE, SH.art[(R() * 3) | 0]); art.scale.set(d.w - .16, d.h - .16, 1); art.position.set(0, d.h / 2, .0175); g.add(art);
+  const art = new T.Mesh(SCREEN_PLANE, SH.art[(R() * 3) | 0]); art.scale.set(d.w - .16, d.h - .16, 1); art.position.set(0, d.h / 2, .021); g.add(art);
 } });
 def('mirrorWall', { name: 'Зеркало', cat: 'decor', w: .5, d: .03, h: .9, elev: .95, wall: true, a: '#c9a77c', b: '#ffffff', la: 'Рама', lb: '—', build(g, A, Bm, R, d) {
   RB(g, d.w, d.h, .025, 0, 0, 0, A, .01, 1);
@@ -1588,38 +1645,42 @@ def('wickerChair', { name: 'Плетёное кресло', cat: 'decor', w: .7,
 
 /* ------------------------------------------------------------------ default layout */
 const DEFAULT_LAYOUT = [
-  // гостиная: стенка по нижней стене и маленьким кусочком по левой
-  ['stCorner', 2.52, -.52, HP], ['stTV', 3.82, -.295, PI], ['stGlass', 5.12, -.295, PI], ['stBooks', 6.02, -.295, PI], ['stClosed', 6.87, -.295, PI],
-  ['stClosed', 2.295, -1.37, HP],
-  ['tv', 3.82, -.37, PI, .5], ['rug', 3.82, -3.0, 0], ['coffeeTable', 3.82, -2.9, 0], ['vase', 3.95, -2.85, 0, .42],
-  ['sofa', 3.82, -4.3, 0], ['armchair', 6.0, -2.9, -HP], ['floorLamp', 2.45, -5.2, 0], ['plant', 7.1, -5.45, 0],
-  ['picture', 3.82, -5.91, 0, 1.45], ['bookshelf', 6.1, -5.755, 0],
-  // малая спальня
-  ['wardrobe', 4.4, -6.38, PI], ['bookshelf', 6.4, -6.245, PI], ['singleBed', 6.505, -8.43, -HP], ['nightstand', 7.33, -7.45, -HP], ['tableLamp', 7.33, -7.45, 0, .5],
-  ['desk', 3.3, -8.58, 0], ['chair', 3.3, -7.95, PI], ['smallPlant', 2.75, -8.75, 0, .75],
-  // кухня: гарнитур у верхней стены, справа окно и выход на балкон
-  ['kFridge', 2.37, -12.405, 0], ['kBase', 2.97, -12.43, 0], ['kStove', 3.57, -12.43, 0], ['kBase', 4.17, -12.43, 0], ['kSink', 4.87, -12.43, 0], ['kBase', 5.57, -12.43, 0],
-  ['kUpper', 2.97, -12.565, 0, 1.45], ['kHood', 3.57, -12.505, 0, 1.6], ['kUpper', 4.17, -12.565, 0, 1.45], ['kUpper', 4.77, -12.565, 0, 1.45], ['kUpper', 5.57, -12.565, 0, 1.45],
-  ['microwave', 5.57, -12.45, 0, .9], ['diningTable', 4.4, -10.6, 0],
-  ['chair', 4.05, -9.95, PI], ['chair', 4.75, -9.95, PI], ['chair', 4.05, -11.25, 0], ['chair', 4.75, -11.25, 0], ['plant', 7.15, -12.35, 0],
+  // гостиная: стенка по нижней стене и кусочком по левой, окно справа
+  ['stCorner', 2.12, -.52, HP], ['stTV', 3.42, -.295, PI], ['stGlass', 4.72, -.295, PI], ['stClosed', 1.895, -1.37, HP], ['plant', 5.55, -.42, 0],
+  ['tv', 3.42, -.37, PI, .5], ['rug', 3.42, -2.7, 0], ['coffeeTable', 3.42, -2.55, 0], ['vase', 3.55, -2.5, 0, .42],
+  ['sofa', 3.42, -3.9, 0], ['armchair', 5.1, -2.5, -HP], ['floorLamp', 1.95, -4.4, 0], ['plant', 5.55, -4.35, 0],
+  ['picture', 3.42, -4.71, 0, 1.45], ['radiator', 5.84, -2.5, -HP, .1], ['curtainsWide', 5.79, -2.5, -HP, 0],
+  // малая спальня: тёплая и уютная
+  ['doubleBed', 3.9, -7.08, 0], ['nightstand', 2.75, -7.93, 0], ['nightstand', 5.05, -7.93, 0],
+  ['tableLamp', 2.75, -7.93, 0, .5], ['tableLamp', 5.05, -7.93, 0, .5], ['wardrobe', 4.5, -5.18, PI],
+  ['armchair', 2.32, -5.52, 3 * PI / 4], ['floorLamp', 3.25, -5.05, 0], ['rug', 3.9, -6.55, 0], ['plant', 5.6, -7.85, 0],
+  ['picture', 3.9, -8.11, 0, 1.4], ['bookshelf', 1.845, -7.7, HP], ['radiator', 5.84, -6.6, -HP, .1], ['curtains', 5.79, -6.6, -HP, 0],
+  // кухня: гарнитур у верхней стены, справа выход на балкон и окно с батареей
+  ['kFridge', 1.97, -10.605, 0], ['kBase', 2.57, -10.63, 0], ['kStove', 3.17, -10.63, 0], ['kBase', 3.77, -10.63, 0], ['kSink', 4.47, -10.63, 0],
+  ['kUpper', 2.57, -10.765, 0, 1.45], ['kHood', 3.17, -10.705, 0, 1.6], ['kUpper', 3.77, -10.765, 0, 1.45], ['kUpper', 4.37, -10.765, 0, 1.45],
+  ['microwave', 3.77, -10.65, 0, .9], ['diningTable', 3.9, -9.2, 0],
+  ['chair', 3.55, -8.55, PI], ['chair', 4.25, -8.55, PI], ['chair', 3.55, -9.85, 0], ['chair', 4.25, -9.85, 0], ['plant', 2.0, -9.9, 0],
+  ['radiator', 5.84, -9.175, -HP, .1],
   // балкон
-  ['roundTable', 8.3, -11.9, 0], ['wickerChair', 8.3, -11.15, PI], ['smallPlant', 8.3, -11.9, 0, .72], ['plant', 8.6, -9.85, 0],
-  // ванная
-  ['bathtub', .92, -12.355, 0], ['toilet', .395, -11.6, HP], ['bathSink', 1.7, -11.0, -HP], ['washer', 1.655, -11.65, -HP],
-  // большая спальня
-  ['doubleBed', -2.6, -7.52, PI], ['nightstand', -3.9, -6.67, PI], ['nightstand', -1.3, -6.67, PI],
-  ['tableLamp', -3.9, -6.67, 0, .5], ['tableLamp', -1.3, -6.67, 0, .5],
-  ['wardrobe', -2.6, -10.02, 0], ['dresser', -5.09, -9.72, HP], ['pcDesk', -.445, -7.8, -HP], ['computer', -.4, -7.8, -HP, .75],
-  ['officeChair', -1.2, -7.95, HP], ['pcTower', -.3, -8.85, -HP], ['rug', -2.6, -8.9, 0], ['plant', -4.95, -6.85, 0], ['picture', -2.6, -6.49, PI, 1.45],
-  ['armchair', -4.6, -8.4, HP], ['floorLamp', -4.95, -7.55, 0],
+  ['roundTable', 6.85, -9.5, 0], ['wickerChair', 6.85, -8.85, PI], ['smallPlant', 6.85, -9.5, 0, .72], ['plant', 7.05, -10.6, 0],
+  // ванная: душ слева вверху, раковина с зеркалом, туалет, напротив стиралка и шкафчик
+  ['showerCabin', -.38, -11.28, 0], ['bathSink', .5, -11.5, 0], ['toilet', 1.15, -11.405, 0],
+  ['washer', 1.15, -9.745, PI], ['bathCabinet', 1.15, -9.62, PI, 1.35],
+  // большая спальня: вытянутая, дверь справа в коридор
+  ['doubleBed', -2.6, -7.02, PI], ['nightstand', -3.9, -6.17, PI], ['nightstand', -1.3, -6.17, PI],
+  ['tableLamp', -3.9, -6.17, 0, .5], ['tableLamp', -1.3, -6.17, 0, .5],
+  ['wardrobe', -2.6, -9.02, 0], ['dresser', -5.09, -6.6, HP], ['pcDesk', -.445, -6.95, -HP], ['computer', -.4, -6.95, -HP, .75],
+  ['officeChair', -1.15, -7.05, HP], ['pcTower', -.3, -8.0, -HP], ['rug', -2.6, -8.05, 0], ['armchair', -4.55, -8.0, HP],
+  ['floorLamp', -4.6, -9.0, 0], ['plant', -4.0, -9.0, 0], ['picture', -2.6, -5.99, PI, 1.45],
+  ['radiator', -5.24, -8.25, HP, .1], ['curtains', -5.19, -8.25, HP, 0],
   // коридор
-  ['hallUnit', .27, -2.0, HP], ['shoeRack', .22, -.8, HP], ['mirrorWall', .085, -4.0, HP, .95], ['runner', 1.0, -6.2, 0],
-  ['plant', .4, -8.6, 0], ['picture', 1.91, -5.4, -HP, 1.45],
+  ['hallUnit', .27, -2.4, HP], ['shoeRack', .22, -.8, HP], ['mirrorWall', .085, -4.3, HP, .95], ['runner', .8, -6.0, 0],
+  ['plant', .35, -7.6, 0], ['picture', 1.51, -4.6, -HP, 1.45],
 ];
 const DEFAULT_ROOMS = {
   hall: { wall: '#e4dbcf', finish: 'paint', floor: 'tileBeige' },
   living: { wall: '#e9e2d6', finish: 'paint', floor: 'herring' },
-  bed1: { wall: '#c4ceb6', finish: 'paint', floor: 'oak' },
+  bed1: { wall: '#e6d3c3', finish: 'wallpaper', floor: 'oak' },
   kitchen: { wall: '#f4f1ea', finish: 'paint', floor: 'terrazzo' },
   bath: { wall: '#f4f1ea', finish: 'tile', floor: 'tileWhite' },
   bed2: { wall: '#d3dde0', finish: 'paint', floor: 'oak' },
@@ -1689,7 +1750,7 @@ function createItem(data, anim) {
   it.matA.envMapIntensity = it.matB.envMapIntensity = envK;
   if (!d.rug && !d.small && !d.wall) {
     const bl = new T.Mesh(BLOB_GEO, BLOB_MAT);
-    bl.rotation.x = -HP; bl.scale.set(d.w + .35, d.d + .35, 1); bl.position.y = .016; bl.renderOrder = 1;
+    bl.rotation.x = -HP; bl.scale.set(d.w + .35, d.d + .35, 1); bl.position.y = .021; bl.renderOrder = 1;
     it.obj.add(bl); it.blob = bl; blobs.push(bl);
   }
   if (d.light) {
@@ -1819,7 +1880,7 @@ function setRing(it) {
 /* ------------------------------------------------------------------ state, history */
 let state = null;
 const history = [];
-const KEY = 'kvartira3d-v2';
+const KEY = 'kvartira3d-v3';
 function serialize() {
   return { v: 1, rooms: state.rooms, walls: state.walls, items: items.map((it) => ({ uid: it.uid, type: it.type, x: +it.x.toFixed(3), z: +it.z.toFixed(3), r: +it.r.toFixed(4), y: +it.y.toFixed(3), a: it.a, b: it.b })) };
 }
@@ -2002,7 +2063,7 @@ function updateWalls(dt) {
     const dd = seg.target - seg.h;
     if (Math.abs(dd) < 1e-3) { if (seg.h === seg.target) continue; seg.h = seg.target; } else { seg.h += dd * k; moving = true; }
     for (const p of seg.pieces) {
-      const top = Math.min(p.y1, seg.h), hh = top - p.y0;
+      const top = Math.min(p.y1, seg.h + p.dy), hh = top - p.y0;
       p.mesh.visible = hh > .002;
       if (p.mesh.visible) p.mesh.scale.y = hh;
     }
@@ -2067,8 +2128,8 @@ function updateSelbar() {
   if (img.dataset.type !== type) { img.dataset.type = type; img.removeAttribute('src'); requestThumb(type, (url) => { if (img.dataset.type === type) img.src = url; }); }
   img.alt = d.name;
   $('#selbar').classList.toggle('warn', collides(selected));
-  renderSwatches($('#swA'), FURN_COLORS, selected.a, (hex) => { pushHistory(); setItemColor(selected, 'a', hex); save(); updateSelbar(); });
-  renderSwatches($('#swB'), FURN_COLORS, selected.b, (hex) => { pushHistory(); setItemColor(selected, 'b', hex); save(); updateSelbar(); });
+  renderSwatches($('#swA'), FURN_COLORS, selected.a, (hex) => { pushHistory(); setItemColor(selected, 'a', hex); save(); updateSelbar(); }, true);
+  renderSwatches($('#swB'), FURN_COLORS, selected.b, (hex) => { pushHistory(); setItemColor(selected, 'b', hex); save(); updateSelbar(); }, true);
 }
 function rotateSelected(dir) {
   if (!selected) return;
@@ -2163,6 +2224,18 @@ function edgeScroll(dt) {
   dragMove(drag.x, drag.y);
   return true;
 }
+function wallSegFor(it) {
+  const fx = Math.sin(it.r), fz = Math.cos(it.r);
+  const bx = it.x - fx * (it.def.d / 2 + .1), bz = it.z - fz * (it.def.d / 2 + .1);
+  let best = null, bd = .35;
+  for (const sg of segs) {
+    const along = sg.o === 'h' ? bx : bz, perp = sg.o === 'h' ? bz : bx;
+    if (along < sg.a - .05 || along > sg.b + .05) continue;
+    const dd = Math.abs(perp - sg.at);
+    if (dd < bd) { bd = dd; best = sg; }
+  }
+  return best;
+}
 function updateItems(dt) {
   const k = 1 - Math.exp(-dt * 24);
   let moving = false;
@@ -2176,9 +2249,10 @@ function updateItems(dt) {
     if (Math.abs(dr) > 1e-4) { it.vr += dr * (1 - Math.exp(-dt * 14)); ch = true; } else it.vr = it.r;
     if (ch || it.lift) { syncObj(it); moving = moving || ch; }
     if (it.def.wall) {
-      // wall-mounted things go down together with a cut-away wall
-      const vx = -Math.sin(cam.yaw), vz = -Math.cos(cam.yaw);
-      const hide = wallMode === 'down' || (wallMode === 'cut' && cam.pitch <= 1.32 && Math.sin(it.vr) * vx + Math.cos(it.vr) * vz > .16);
+      // wall-mounted things go down together with the wall they hang on
+      const key = it.x.toFixed(2) + ',' + it.z.toFixed(2) + ',' + it.r.toFixed(2);
+      if (it.segKey !== key) { it.segKey = key; it.seg = wallSegFor(it); }
+      const hide = !!it.seg && it.seg.h < Math.min(it.seg.full, it.y + it.def.h) - .05;
       const t = hide ? 0 : 1;
       if (it.wv === undefined) it.wv = t;
       if (Math.abs(t - it.wv) > .002) { it.wv += (t - it.wv) * (1 - Math.exp(-dt * 9)); moving = true; } else it.wv = t;
@@ -2187,7 +2261,7 @@ function updateItems(dt) {
   }
   if (selected) {
     const it = selected;
-    ring.position.set(it.vx, it.vy + .022 + (it.def.rug ? .012 : 0), it.vz);
+    ring.position.set(it.vx, it.vy + .026 + (it.def.rug ? .016 : 0), it.vz);
     ring.rotation.y = it.vr;
   }
   return moving;
@@ -2338,8 +2412,15 @@ function handleTap(x, y, hit) {
   if (selected) deselect();
 }
 function paintWallAt(x, y) {
-  const h = pick(x, y, wallMeshes);
+  const h = pick(x, y, pickables.concat(wallMeshes));
   if (!h) return;
+  if (h.object.userData.item) {
+    const it = h.object.userData.item;
+    pushHistory(); setItemColor(it, 'a', paint.color); save();
+    pulseAt(x, y);
+    toast(dotHtml(`background-color:${paint.color}`) + icon('i-sofa'), true);
+    return;
+  }
   const { seg, side } = h.object.userData;
   const key = seg.key + '|' + side;
   const room = wallMats[key].room;
@@ -2398,13 +2479,14 @@ function segPill(row) {
 }
 function setSeg(row, btn) { row.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === btn)); segPill(row); }
 
-function renderSwatches(el, colors, current, onPick) {
+function renderSwatches(el, colors, current, onPick, draggable) {
   el.innerHTML = '';
   for (const c of colors) {
     const b = document.createElement('button');
     b.className = 'sw' + (c.toLowerCase() === (current || '').toLowerCase() ? ' on' : '');
     b.style.background = c; b.setAttribute('aria-label', c);
     b.addEventListener('click', () => onPick(c));
+    if (draggable) makePaintDrag(b, { kind: 'color', value: c });
     el.appendChild(b);
   }
   const cu = document.createElement('label'); cu.className = 'sw custom'; cu.title = '+';
@@ -2426,13 +2508,14 @@ function brushStyle(el, color, finish) {
   el.style.backgroundBlendMode = 'multiply';
 }
 function renderWallsPanel() {
-  renderSwatches($('#wallSwatches'), WALL_COLORS, paint.color, (c) => { paint.color = c; renderWallsPanel(); });
+  renderSwatches($('#wallSwatches'), WALL_COLORS, paint.color, (c) => { paint.color = c; renderWallsPanel(); }, true);
   const fin = $('#wallFinishes');
   if (!fin.children.length) {
     FINISHES.forEach((f, i) => {
       const b = document.createElement('button'); b.className = 'tile'; b.style.setProperty('--i', i);
       b.setAttribute('aria-label', f.name); b.title = f.name; b.dataset.id = f.id;
       b.addEventListener('click', () => { paint.finish = f.id; renderWallsPanel(); });
+      makePaintDrag(b, { kind: 'finish', value: f.id });
       fin.appendChild(b);
     });
   }
@@ -2448,6 +2531,7 @@ function renderFloorPanel() {
       b.setAttribute('aria-label', f.name); b.title = f.name; b.dataset.id = f.id;
       b.style.backgroundImage = `url(${texThumb(floorTex(f.id))})`;
       b.addEventListener('click', () => { paint.floor = f.id; renderFloorPanel(); });
+      makePaintDrag(b, { kind: 'floor', value: f.id });
       el.appendChild(b);
     });
   }
@@ -2655,6 +2739,125 @@ function toast(html, withUndo) {
 }
 const dotHtml = (style) => `<span class="dot" style="${style}"></span>`;
 $('#toastBtn').addEventListener('click', () => { undo(); $('#toast').classList.remove('show'); });
+
+/* drag a colour, finish or floor out of the sheet: whatever is under the finger previews it, lifting the finger applies it */
+const colorFades = new Map();
+function fadeColor(m, to) { colorFades.set(m, to.clone()); invalidate(); }
+function updateFades(dt) {
+  if (!colorFades.size) return false;
+  const k = 1 - Math.exp(-dt * 18);
+  for (const [m, to] of colorFades) {
+    m.color.lerp(to, k);
+    if (Math.abs(m.color.r - to.r) + Math.abs(m.color.g - to.g) + Math.abs(m.color.b - to.b) < .002) { m.color.copy(to); colorFades.delete(m); }
+  }
+  return true;
+}
+let pdrag = null, suppressClick = false;
+document.addEventListener('click', (e) => { if (suppressClick) { e.stopPropagation(); e.preventDefault(); suppressClick = false; } }, true);
+function ghostStyle(p) {
+  if (p.kind === 'color') return `background-color:${p.value}`;
+  if (p.kind === 'finish') return `background-color:${paint.color};background-image:url(${texThumb(wallTex(p.value))});background-blend-mode:multiply`;
+  return `background-image:url(${texThumb(floorTex(p.value))})`;
+}
+function makePaintDrag(el, payload) {
+  el.style.touchAction = 'none';
+  el.addEventListener('pointerdown', (e) => {
+    if (e.button) return;
+    const st = { x: e.clientX, y: e.clientY, on: false };
+    try { el.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    const move = (ev) => {
+      if (!st.on) {
+        if (Math.hypot(ev.clientX - st.x, ev.clientY - st.y) < 9) return;
+        st.on = true; startPaintDrag(payload);
+      }
+      movePaintDrag(ev.clientX, ev.clientY);
+    };
+    const up = (ev) => {
+      el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up);
+      if (st.on) { suppressClick = true; setTimeout(() => { suppressClick = false; }, 400); endPaintDrag(ev.type === 'pointerup', ev.clientX, ev.clientY); }
+    };
+    el.addEventListener('pointermove', move); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+  });
+}
+function startPaintDrag(payload) {
+  const g = document.createElement('div'); g.className = 'ghost'; g.innerHTML = `<i style="${ghostStyle(payload)}"></i>`;
+  document.body.appendChild(g);
+  pdrag = { payload, ghost: g, id: null, hit: null, saved: null };
+  $('#sheet').classList.add('peek'); $('#selbar').classList.add('peek');
+  vibrate(10);
+}
+function movePaintDrag(x, y) {
+  pdrag.ghost.style.transform = `translate(${x}px, ${y - 64}px)`;
+  const p = pdrag.payload;
+  let hit = null, h;
+  if (p.kind === 'floor') { h = pick(x, y, floorMeshes); if (h) hit = { type: 'floor', room: h.object.userData.room }; }
+  else if (p.kind === 'finish') { h = pick(x, y, wallMeshes); if (h) hit = wallHit(h); }
+  else { h = pick(x, y, pickables.concat(wallMeshes)); if (h) hit = h.object.userData.item ? { type: 'item', item: h.object.userData.item } : wallHit(h); }
+  const id = !hit ? null : hit.type === 'floor' ? 'f:' + hit.room : hit.type === 'item' ? 'i:' + hit.item.uid : (paint.scope === 'room' ? 'r:' + hit.room : 'w:' + hit.key);
+  pdrag.ghost.classList.toggle('hit', !!hit);
+  if (id === pdrag.id) return;
+  restorePreview();
+  pdrag.id = id; pdrag.hit = hit;
+  if (hit) { applyPreview(hit); vibrate(6); }
+}
+function wallHit(h) { const { seg, side } = h.object.userData, key = seg.key + '|' + side; return { type: 'wall', key, room: wallMats[key].room }; }
+function wallKeysFor(hit) { return paint.scope === 'room' ? Object.keys(wallMats).filter((k) => wallMats[k].room === hit.room) : [hit.key]; }
+function applyPreview(hit) {
+  const p = pdrag.payload;
+  if (hit.type === 'wall') for (const k of wallKeysFor(hit)) {
+    const m = wallMats[k].mat;
+    if (p.kind === 'color') fadeColor(m, lin(p.value)); else m.map = wallTex(p.value);
+  }
+  if (hit.type === 'item') fadeColor(hit.item.matA, lin(p.value));
+  if (hit.type === 'floor') {
+    const f = FLOORS.find((q) => q.id === p.value), m = ROOM[hit.room].floor.material;
+    m.map = floorTex(f.id); m.roughness = f.rough; m.userData.refl.value = f.refl;
+    m.color.setRGB(.7, .7, .7); fadeColor(m, new T.Color(1, 1, 1));
+  }
+  invalidate();
+}
+function restorePreview() {
+  const hit = pdrag && pdrag.hit;
+  if (!hit) return;
+  if (hit.type === 'wall') for (const k of wallKeysFor(hit)) { const st = wallStyle(k); fadeColor(wallMats[k].mat, lin(st.c)); wallMats[k].mat.map = wallTex(st.f); }
+  if (hit.type === 'item' && !hit.item.dying) fadeColor(hit.item.matA, lin(hit.item.a));
+  if (hit.type === 'floor') {
+    const f = FLOORS.find((q) => q.id === state.rooms[hit.room].floor) || FLOORS[0], m = ROOM[hit.room].floor.material;
+    m.map = floorTex(f.id); m.roughness = f.rough; m.userData.refl.value = f.refl; fadeColor(m, new T.Color(1, 1, 1));
+  }
+  pdrag.hit = null; pdrag.id = null;
+  invalidate();
+}
+function endPaintDrag(commit, x, y) {
+  const p = pdrag.payload, hit = pdrag.hit;
+  if (commit && hit) {
+    pushHistory();
+    if (hit.type === 'wall') {
+      const c = p.kind === 'color' ? p.value : null, f = p.kind === 'finish' ? p.value : null;
+      if (paint.scope === 'room') {
+        const rs = state.rooms[hit.room]; if (c) rs.wall = c; if (f) rs.finish = f;
+        for (const k of Object.keys(state.walls)) if (wallMats[k] && wallMats[k].room === hit.room) delete state.walls[k];
+      } else { const cur = wallStyle(hit.key); state.walls[hit.key] = { c: c || cur.c, f: f || cur.f }; }
+      if (c) paint.color = c; if (f) paint.finish = f;
+      for (const k of wallKeysFor(hit)) colorFades.delete(wallMats[k].mat);
+      applyWalls(true);
+    }
+    if (hit.type === 'item') { colorFades.delete(hit.item.matA); setItemColor(hit.item, 'a', p.value); if (hit.item === selected) updateSelbar(); }
+    if (hit.type === 'floor') { state.rooms[hit.room].floor = p.value; paint.floor = p.value; applyFloors(null); }
+    save();
+    const el = document.createElement('div'); el.className = 'ripple'; el.style.left = x + 'px'; el.style.top = y + 'px';
+    el.style.color = p.kind === 'color' ? p.value : 'var(--accent)';
+    document.body.appendChild(el); setTimeout(() => el.remove(), 700);
+    toast(dotHtml(ghostStyle(p)) + icon(hit.type === 'item' ? 'i-sofa' : hit.type === 'floor' ? 'i-floor' : (paint.scope === 'room' ? 'i-room' : 'i-wall')), true);
+    vibrate(14);
+    if (activeTab === 'walls' && sheetOpen) renderWallsPanel();
+    if (activeTab === 'floor' && sheetOpen) renderFloorPanel();
+  } else restorePreview();
+  const g = pdrag.ghost;
+  g.classList.add('out'); setTimeout(() => g.remove(), 300);
+  pdrag = null;
+  $('#sheet').classList.remove('peek'); $('#selbar').classList.remove('peek');
+}
 window.addEventListener('resize', () => { moveTabPill(); $$('.iseg').forEach(segPill); });
 
 /* ------------------------------------------------------------------ time of day, lights, reflections */
@@ -2743,7 +2946,8 @@ function applyTime() {
   const isDay = sunH > -.02;
   if (wasDay !== isDay) { skyEl.classList.toggle('night', !isDay); wasDay = isDay; }
   placeKnob();
-  starsEl.style.opacity = smooth(-.02, -.32, sunH).toFixed(3);
+  const starK = smooth(-.02, -.32, sunH);
+  starsEl.style.opacity = starK.toFixed(3); starsEl.classList.toggle('on', starK > .01);
   const X = isDay ? -Math.sin(phi) : Math.sin(phi), Y = clamp(isDay ? sunH : -sunH - .1, 0, 1);
   celEl.style.transform = `translate(${(50 + X * 42).toFixed(2)}vw, ${(30 - Y * 24).toFixed(2)}vh)`;
   celEl.style.background = isDay ? 'radial-gradient(circle, rgba(255,228,175,.6), rgba(255,200,120,.18) 34%, transparent 66%)' : 'radial-gradient(circle, rgba(205,218,255,.4), rgba(160,180,255,.1) 34%, transparent 66%)';
@@ -2924,6 +3128,7 @@ function frame(now) {
   active = updateCamera(dt) || active;
   active = updateWalls(dt) || active;
   active = updateItems(dt) || active;
+  active = updateFades(dt) || active;
   if (timePlay) { tod = (tod + dt * 24 / 60) % 24; applyTime(); active = true; }
   if (active || dirty > 0) {
     if (settings.refl) renderReflection();
