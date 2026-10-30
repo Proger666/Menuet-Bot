@@ -308,10 +308,18 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
 
 .loading { position: fixed; inset: 0; display: grid; place-items: center; z-index: 50; background: var(--sky-bottom); transition: opacity .7s, visibility 0s .7s; }
 .loading.done { opacity: 0; visibility: hidden; }
-.loading svg { width: 84px; height: 84px; color: var(--accent); }
-.loading svg path { stroke-dasharray: 120; stroke-dashoffset: 120; animation: draw 1.6s var(--ease) infinite alternate; }
+.ld { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 0 28px; max-width: 360px; text-align: center; }
+.ldlogo { position: relative; width: 120px; height: 120px; display: grid; place-items: center; color: var(--accent); margin-bottom: 8px; }
+.ldlogo > svg:first-child { width: 58px; height: 58px; }
+.ldlogo > svg:first-child path { stroke-dasharray: 120; stroke-dashoffset: 120; animation: draw 1.6s var(--ease) infinite alternate; }
+.ldring { position: absolute; inset: 0; width: 120px; height: 120px; transform: rotate(-90deg); }
+.ldring circle { fill: none; stroke-width: 4; stroke: var(--chip-hover); }
+.ldring circle + circle { stroke: var(--accent); stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 95; transition: stroke-dashoffset .5s var(--ease); }
+.ldstep { margin: 0; font-size: 16px; font-weight: 600; color: var(--ink); min-height: 1.4em; animation: panelIn .4s var(--ease); }
+.ldpct { margin: 0; font-size: 12px; font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+.ldwhy { margin: 6px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-2); text-wrap: balance; }
 @keyframes draw { to { stroke-dashoffset: 0; } }
-.loading .err { position: absolute; bottom: 30%; font: 500 13px var(--font-ui); color: var(--danger); max-width: 300px; text-align: center; padding: 0 16px; }
+.loading .err { margin: 6px 0 0; font: 500 13px var(--font-ui); color: var(--danger); max-width: 300px; text-align: center; }
 .loading .err:empty { display: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
@@ -472,9 +480,17 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
   </div>
 </div>
 
-<div class="loading" id="loading">
-  <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22 24 8l18 14M10 19v21h28V19M20 40V28h8v12"/></svg>
-  <p class="err" id="loadingText"></p>
+<div class="loading" id="loading" role="status" aria-live="polite">
+  <div class="ld">
+    <div class="ldlogo">
+      <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22 24 8l18 14M10 19v21h28V19M20 40V28h8v12"/></svg>
+      <svg class="ldring" viewBox="0 0 120 120"><circle cx="60" cy="60" r="54"/><circle id="ldArc" cx="60" cy="60" r="54" pathLength="100"/></svg>
+    </div>
+    <p class="ldstep" id="ldStep">Загружаем 3D-движок</p>
+    <p class="ldpct" id="ldPct">5%</p>
+    <p class="ldwhy">Квартира собирается прямо на вашем устройстве: стены, мебель, свет и тени. Это происходит один раз при открытии.</p>
+    <p class="err" id="loadingText"></p>
+  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -568,6 +584,10 @@ Object.assign(sun.shadow.camera, { left: -12.5, right: 12.5, top: 12.5, bottom: 
 sun.shadow.bias = -0.0004;
 sun.shadow.normalBias = 0.025;
 scene.add(sun, sun.target);
+const warmFill = new T.AmbientLight(lin('#ffcf9c'), 0);
+scene.add(warmFill);
+renderer.shadowMap.autoUpdate = false;
+let shadowDirty = true, lastShadowT = 0, lastTimeChange = 0;
 
 /* ------------------------------------------------------------------ textures */
 function canvasTex(px, meters, draw) {
@@ -793,16 +813,23 @@ function floorTex(id) { const k = 'f:' + id; if (!texCache[k]) texCache[k] = (FL
 function wallTex(id) { const k = 'w:' + id; if (!texCache[k]) texCache[k] = texWall(id); return texCache[k]; }
 
 /* world-space UVs: textures keep their real size on any wall height or room size */
+/* walls: world UVs and a soft contact shadow where the wall meets the floor */
 function worldUV(mat) {
+  mat.dithering = true;
   mat.onBeforeCompile = (sh) => {
-    sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', [
+    sh.vertexShader = 'varying float vWY;\n' + sh.vertexShader.replace('#include <begin_vertex>', [
       '#include <begin_vertex>',
-      '#ifdef USE_UV',
       'vec4 wpUV = modelMatrix * vec4(transformed, 1.0);',
+      'vWY = wpUV.y;',
+      '#ifdef USE_UV',
       'vec3 wnUV = normalize(mat3(modelMatrix) * objectNormal);',
       'vec2 tuv = abs(wnUV.y) > 0.5 ? vec2(wpUV.x, -wpUV.z) : (abs(wnUV.x) > 0.5 ? vec2(-wpUV.z * sign(wnUV.x), wpUV.y) : vec2(wpUV.x * sign(wnUV.z), wpUV.y));',
       'vUv = (uvTransform * vec3(tuv, 1.0)).xy;',
       '#endif',
+    ].join('\n'));
+    sh.fragmentShader = 'varying float vWY;\n' + sh.fragmentShader.replace('#include <tonemapping_fragment>', [
+      'gl_FragColor.rgb *= mix(.62, 1., smoothstep(.0, .55, vWY)) * mix(1., .93, smoothstep(2.2, 2.7, vWY));',
+      '#include <tonemapping_fragment>',
     ].join('\n'));
   };
   return mat;
@@ -811,11 +838,13 @@ function worldUV(mat) {
 const reflRT = new T.WebGLRenderTarget(4, 4, { minFilter: T.LinearFilter, magFilter: T.LinearFilter, format: T.RGBAFormat });
 reflRT.texture.generateMipmaps = false;
 const REFL = { tReflect: { value: reflRT.texture }, uReflMatrix: { value: new T.Matrix4() }, uReflTexel: { value: new T.Vector2(.004, .004) }, uReflOn: { value: 1 } };
-function floorShader(mat) {
+function floorShader(mat, rect) {
+  mat.dithering = true;
   mat.userData.refl = { value: .2 };
+  mat.userData.room = { value: new T.Vector4(rect[0], rect[1], rect[2], rect[3]) };
   mat.onBeforeCompile = (sh) => {
     sh.uniforms.tReflect = REFL.tReflect; sh.uniforms.uReflMatrix = REFL.uReflMatrix; sh.uniforms.uReflTexel = REFL.uReflTexel;
-    sh.uniforms.uReflOn = REFL.uReflOn; sh.uniforms.uRefl = mat.userData.refl;
+    sh.uniforms.uReflOn = REFL.uReflOn; sh.uniforms.uRefl = mat.userData.refl; sh.uniforms.uRoom = mat.userData.room;
     sh.vertexShader = 'uniform mat4 uReflMatrix;\nvarying vec4 vReflUv;\nvarying vec3 vWPosR;\n' + sh.vertexShader.replace('#include <begin_vertex>', [
       '#include <begin_vertex>',
       'vec4 wpR = modelMatrix * vec4(transformed, 1.0);',
@@ -824,8 +853,10 @@ function floorShader(mat) {
       'vUv = (uvTransform * vec3(wpR.x, -wpR.z, 1.0)).xy;',
       '#endif',
     ].join('\n'));
-    sh.fragmentShader = 'uniform sampler2D tReflect;\nuniform float uRefl;\nuniform float uReflOn;\nuniform vec2 uReflTexel;\nvarying vec4 vReflUv;\nvarying vec3 vWPosR;\n' + sh.fragmentShader.replace('#include <tonemapping_fragment>', [
+    sh.fragmentShader = 'uniform sampler2D tReflect;\nuniform float uRefl;\nuniform float uReflOn;\nuniform vec2 uReflTexel;\nuniform vec4 uRoom;\nvarying vec4 vReflUv;\nvarying vec3 vWPosR;\n' + sh.fragmentShader.replace('#include <tonemapping_fragment>', [
       '{',
+      '  float dEdge = min(min(vWPosR.x - uRoom.x, uRoom.y - vWPosR.x), min(vWPosR.z - uRoom.z, uRoom.w - vWPosR.z));',
+      '  gl_FragColor.rgb *= mix(.6, 1., smoothstep(.04, .5, dEdge));',
       '  vec2 ruv = vReflUv.xy / vReflUv.w; vec2 ro = uReflTexel * 2.5;',
       '  vec4 rc = texture2D(tReflect, ruv) * .36 + (texture2D(tReflect, ruv + vec2(ro.x, 0.)) + texture2D(tReflect, ruv - vec2(ro.x, 0.)) + texture2D(tReflect, ruv + vec2(0., ro.y)) + texture2D(tReflect, ruv - vec2(0., ro.y))) * .16;',
       '  vec3 Vr = normalize(cameraPosition - vWPosR);',
@@ -1055,7 +1086,7 @@ function buildPlan() {
 
   // floors and base slab
   for (const r of ROOMS) {
-    const mat = floorShader(new T.MeshStandardMaterial({ color: lin('#ffffff'), roughness: .6, map: floorTex('oak') }));
+    const mat = floorShader(new T.MeshStandardMaterial({ color: lin('#ffffff'), roughness: .6, map: floorTex('oak') }), r.rects[0]);
     for (const [x1, x2, z1, z2] of r.rects) {
       const m = new T.Mesh(new T.PlaneGeometry(x2 - x1, z2 - z1), mat);
       m.rotation.x = -HP; m.position.set((x1 + x2) / 2, 0.001, (z1 + z2) / 2); m.receiveShadow = true;
@@ -1071,7 +1102,6 @@ function buildPlan() {
   ground.rotation.x = -HP; ground.position.set(CX, -.31, CZ); ground.receiveShadow = true; scene.add(ground); reflHide.push(ground);
   reflHide.push(...floorMeshes);
 }
-buildPlan();
 
 /* ------------------------------------------------------------------ furniture geometry */
 function rboxGeo(w, h, d, r, seg) {
@@ -1619,13 +1649,13 @@ def('smallPlant', { name: 'Цветок в горшке', cat: 'decor', w: .18, 
   C(g, .075, .06, .13, 0, 0, 0, Bm, 16);
   for (let i = 0; i < 9; i++) S(g, .055, (R() - .5) * .1, .16 + R() * .12, (R() - .5) * .1, R() < .5 ? A : SH.leaf2, 1, .75, 1);
 } });
-def('floorLamp', { name: 'Торшер', cat: 'decor', w: .4, d: .4, h: 1.65, a: '#2b2c30', b: '#efe6d6', emB: .25, light: { y: 1.45, dist: 5.5, i: 1.5, glow: 1.3 }, la: 'Стойка', lb: 'Абажур', build(g, A, Bm, R, d) {
+def('floorLamp', { name: 'Торшер', cat: 'decor', w: .4, d: .4, h: 1.65, a: '#2b2c30', b: '#efe6d6', emB: .25, light: { y: 1.45, dist: 6, i: 1.8, glow: 1.3 }, la: 'Стойка', lb: 'Абажур', build(g, A, Bm, R, d) {
   C(g, .15, .16, .025, 0, 0, 0, A, 24);
   C(g, .012, .012, 1.4, 0, .02, 0, A, 8);
   C(g, .13, .2, .3, 0, 1.33, 0, Bm, 24);
   S(g, .05, 0, 1.42, 0, SH.warm);
 } });
-def('tableLamp', { name: 'Настольная лампа', cat: 'decor', w: .26, d: .26, h: .46, small: true, a: '#c9b9a3', b: '#f3ece0', emB: .25, light: { y: .34, dist: 3.4, i: 1.0, glow: .8 }, la: 'Основание', lb: 'Абажур', build(g, A, Bm, R, d) {
+def('tableLamp', { name: 'Настольная лампа', cat: 'decor', w: .26, d: .26, h: .46, small: true, a: '#c9b9a3', b: '#f3ece0', emB: .25, light: { y: .34, dist: 4, i: 1.3, glow: .8 }, la: 'Основание', lb: 'Абажур', build(g, A, Bm, R, d) {
   C(g, .05, .08, .2, 0, 0, 0, A, 18);
   C(g, .008, .008, .08, 0, .2, 0, SH.chrome, 6);
   C(g, .085, .13, .18, 0, .27, 0, Bm, 22);
@@ -1763,6 +1793,7 @@ function createItem(data, anim) {
   it.inner.traverse((o) => { if (o.isMesh) { o.userData.item = it; o.castShadow = o.castShadow && !d.rug; } });
   it.vx = it.x; it.vz = it.z; it.vy = it.y; it.vr = it.r; it.lift = 0;
   it.matA.envMapIntensity = it.matB.envMapIntensity = envK;
+  if (envMats) { envMats.add(it.matA); envMats.add(it.matB); }
   if (!d.rug && !d.small && !d.wall) {
     const bl = new T.Mesh(BLOB_GEO, BLOB_MAT);
     bl.rotation.x = -HP; bl.scale.set(d.w + .35, d.d + .35, 1); bl.position.y = .021; bl.renderOrder = 1;
@@ -1770,7 +1801,8 @@ function createItem(data, anim) {
   }
   if (d.light) {
     const L = new T.PointLight(lin('#ffcf94'), 0, d.light.dist, 2);
-    L.position.set(0, d.light.y, 0); L.visible = false; it.obj.add(L); it.light = L;
+    L.position.set(0, d.light.y, 0); L.userData.want = 0; it.obj.add(L); it.light = L;
+    it.inner.traverse((o) => { if (o.isMesh) o.castShadow = false; });
     const sp = new T.Sprite(new T.SpriteMaterial({ map: GLOW_TEX, color: lin('#ffd6a0'), blending: T.AdditiveBlending, transparent: true, depthWrite: false, opacity: 0 }));
     sp.scale.setScalar(d.light.glow); sp.position.set(0, d.light.y, 0); sp.visible = false; it.obj.add(sp); it.glow = sp;
     it.lampOff = (hashStr(it.uid) % 100) / 100 * .08;
@@ -1796,6 +1828,7 @@ function disposeItem(it) {
 }
 function removeItem(it, anim) {
   const i = items.indexOf(it); if (i < 0) return;
+  shadowDirty = true; lightsDirty = true;
   items.splice(i, 1); it.dying = true; refreshPickables();
   if (!anim) { disposeItem(it); return; }
   dyingItems.add(it);
@@ -2077,6 +2110,7 @@ function updateWalls(dt) {
   for (const seg of segs) {
     const dd = seg.target - seg.h;
     if (Math.abs(dd) < 1e-3) { if (seg.h === seg.target) continue; seg.h = seg.target; } else { seg.h += dd * k; moving = true; }
+    shadowDirty = true;
     for (const p of seg.pieces) {
       const top = Math.min(p.y1, seg.h + p.dy), hh = top - p.y0;
       p.mesh.visible = hh > .002;
@@ -2262,7 +2296,7 @@ function updateItems(dt) {
     }
     let dr = it.r - it.vr;
     if (Math.abs(dr) > 1e-4) { it.vr += dr * (1 - Math.exp(-dt * 14)); ch = true; } else it.vr = it.r;
-    if (ch || it.lift) { syncObj(it); moving = moving || ch; }
+    if (ch || it.lift) { syncObj(it); moving = moving || ch; if (ch) { shadowDirty = true; if (it.light) lightsDirty = true; } }
     if (it.def.wall) {
       // wall-mounted things go down together with the wall they hang on
       const key = it.x.toFixed(2) + ',' + it.z.toFixed(2) + ',' + it.r.toFixed(2);
@@ -2741,7 +2775,7 @@ function bindToggle(id, key, fn) {
 bindToggle('#tgLabels', 'labels');
 bindToggle('#tgSnap', 'snap');
 bindToggle('#tgRefl', 'refl', () => { REFL.uReflOn.value = settings.refl ? 1 : 0; });
-bindToggle('#tgShadows', 'shadows', () => { renderer.shadowMap.enabled = settings.shadows; scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => { m.needsUpdate = true; }); }); });
+bindToggle('#tgShadows', 'shadows', () => { renderer.shadowMap.enabled = settings.shadows; shadowDirty = true; scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => { m.needsUpdate = true; }); }); });
 $('#btnReset').addEventListener('click', () => {
   pushHistory();
   applySnapshot(defaultState(), true);
@@ -2916,24 +2950,64 @@ const BLOB_MAT = new T.MeshBasicMaterial({ color: 0x000000, transparent: true, o
 })() });
 const blobs = [];
 const ROOM_LIGHTS = ROOMS.map((r) => {
-  const base = { living: 1.9, bed2: 1.6, kitchen: 1.7, bed1: 1.4, hall: 1.3, bath: 1.1, balcony: .9 }[r.id] || 1.3;
-  const L = new T.PointLight(lin('#ffd7a6'), 0, Math.max(r.x2 - r.x1, r.z2 - r.z1) * 1.25 + 2, 2);
+  const base = { living: 2.1, bed2: 1.8, kitchen: 1.9, bed1: 1.7, hall: 1.5, bath: 1.3, balcony: 1.0 }[r.id] || 1.5;
+  const L = new T.PointLight(lin('#ffcb8e'), 0, Math.max(r.x2 - r.x1, r.z2 - r.z1) * 1.4 + 2.5, 2);
   L.position.set(r.cx, 2.35, r.cz);
   L.userData = { base, off: (hashStr(r.id) % 100) / 100 * .07 };
-  L.visible = false; scene.add(L);
+  L.userData.want = 0; scene.add(L);
   return L;
 });
+// two point lights that really cast shadows; they stand in for the brightest lamps near the camera
+const SHADOW_POOL = [0, 1].map(() => {
+  const L = new T.PointLight(lin('#ffd2a0'), 0, 6, 2);
+  L.castShadow = true;
+  L.shadow.mapSize.set(512, 512);
+  L.shadow.bias = -.004; L.shadow.normalBias = .03;
+  L.shadow.camera.near = .12; L.shadow.camera.far = 8;
+  L.position.set(0, -40, 0);
+  L.userData.src = null;
+  scene.add(L);
+  return L;
+});
+let lightsDirty = true;
+const _lp = new T.Vector3();
+function assignShadowLights() {
+  lightsDirty = false;
+  const srcs = ROOM_LIGHTS.slice();
+  for (const it of items) if (it.light && !it.dying) srcs.push(it.light);
+  const cands = [];
+  for (const L of srcs) {
+    if (L.userData.want < .05) continue;
+    L.getWorldPosition(_lp);
+    const d2 = (_lp.x - cam.tx) ** 2 + (_lp.z - cam.tz) ** 2;
+    cands.push({ L, p: _lp.clone(), s: L.userData.want / (1 + d2 * .12) });
+  }
+  cands.sort((a, b) => b.s - a.s);
+  const pooled = new Set();
+  SHADOW_POOL.forEach((P, i) => {
+    const c = cands[i];
+    if (!c) { if (P.userData.src) { P.userData.src = null; shadowDirty = true; } P.intensity = 0; return; }
+    if (P.userData.src !== c.L || P.position.distanceToSquared(c.p) > 1e-6) {
+      P.position.copy(c.p); P.color.copy(c.L.color); P.distance = c.L.distance; P.decay = c.L.decay;
+      P.shadow.camera.far = c.L.distance; P.shadow.camera.updateProjectionMatrix();
+      P.userData.src = c.L; shadowDirty = true;
+    }
+    P.intensity = c.L.userData.want;
+    pooled.add(c.L);
+  });
+  for (const L of srcs) L.intensity = pooled.has(L) ? 0 : L.userData.want;
+}
 let tod = (() => { const d = new Date(); return d.getHours() + d.getMinutes() / 60; })();
 let sunH = .5, nightK = 0, envK = 1, timePlay = false, wasDay = null;
 const moonDir = new T.Vector3(-.45, .8, .4).normalize();
 const skyEl = $('#sky'), skyCv = $('#skyCanvas'), knob = $('#skyKnob'), bubble = $('#bubble'), starsEl = $('#stars'), celEl = $('#celestial');
 function lampUpdate(it) {
   const k = smooth(.14 + it.lampOff, -.08 + it.lampOff, sunH);
-  it.light.intensity = k * it.def.light.i; it.light.visible = it.light.intensity > .003;
+  it.light.userData.want = k * it.def.light.i;
   it.matB.emissiveIntensity = it.def.emB * (1 + 4 * k);
   it.glow.material.opacity = .9 * k; it.glow.visible = k > .01;
 }
-function setEnv(m) { if (m && m.isMeshStandardMaterial) m.envMapIntensity = envK; }
+let envMats = null;
 function phaseName(t) { if (t >= 5 && t < 11) return 'утро'; if (t >= 11 && t < 17) return 'день'; if (t >= 17 && t < 22) return 'вечер'; return 'ночь'; }
 function applyTime() {
   const phi = 2 * PI * (tod - 13) / 24;
@@ -2950,11 +3024,14 @@ function applyTime() {
   renderer.toneMappingExposure = s.exp;
   if (Math.abs(envK - s.env) > .002) {
     envK = s.env;
-    scene.traverse((o) => { if (o.material) [].concat(o.material).forEach(setEnv); });
+    if (!envMats) { envMats = new Set(); scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => { if (m.isMeshStandardMaterial) envMats.add(m); }); }); }
+    for (const m of envMats) m.envMapIntensity = envK;
   }
   stageEl.style.background = `radial-gradient(130% 90% at 50% 0%, #${s.top.getHexString()}, #${s.bottom.getHexString()} 75%)`;
   nightK = smooth(.16, -.1, sunH);
-  for (const L of ROOM_LIGHTS) { const k = smooth(.16 + L.userData.off, -.1 + L.userData.off, sunH); L.intensity = k * L.userData.base; L.visible = L.intensity > .003; }
+  for (const L of ROOM_LIGHTS) { const k = smooth(.16 + L.userData.off, -.1 + L.userData.off, sunH); L.userData.want = k * L.userData.base; }
+  warmFill.intensity = .22 * nightK;
+  lightsDirty = true; shadowDirty = true; lastTimeChange = performance.now();
   SH.warm.emissiveIntensity = .5 + 1.4 * nightK;
   for (const it of items) if (it.light) lampUpdate(it);
   BLOB_MAT.opacity = .26 + .24 * nightK;
@@ -3080,15 +3157,15 @@ function renderReflection() {
   for (const o of reflHide) o.visible = false;
   for (const b of blobs) b.visible = false;
   const ringVis = ring.visible; ring.visible = false;
-  const tm = renderer.toneMapping, au = renderer.shadowMap.autoUpdate;
-  renderer.toneMapping = T.NoToneMapping; renderer.shadowMap.autoUpdate = false;
+  const tm = renderer.toneMapping, nu = renderer.shadowMap.needsUpdate;
+  renderer.toneMapping = T.NoToneMapping; renderer.shadowMap.needsUpdate = false;
   renderer.clippingPlanes = CLIP_UP;
   renderer.setRenderTarget(reflRT);
   renderer.setClearColor(0x000000, 0); renderer.clear();
   renderer.render(scene, mirrorCam);
   renderer.setRenderTarget(null);
   renderer.clippingPlanes = [];
-  renderer.toneMapping = tm; renderer.shadowMap.autoUpdate = au;
+  renderer.toneMapping = tm; renderer.shadowMap.needsUpdate = nu;
   for (const o of reflHide) o.visible = true;
   for (const b of blobs) b.visible = true;
   ring.visible = ringVis;
@@ -3119,22 +3196,59 @@ $('#tgRefl').classList.toggle('on', settings.refl);
 REFL.uReflOn.value = settings.refl ? 1 : 0;
 renderer.shadowMap.enabled = settings.shadows;
 
-applyTime();
-state = loadState();
-applyWalls(false);
-applyFloors(null);
-applyItems(state.items, false);
-drawSky(); drawStars();
-applyTime();
-window.addEventListener('resize', () => { drawSky(); drawStars(); });
-
-// intro: fly in from above
+const nextFrame = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+function setStep(text, pct) {
+  const st = $('#ldStep');
+  if (st.textContent !== text) { st.textContent = text; st.style.animation = 'none'; void st.offsetWidth; st.style.animation = ''; }
+  $('#ldPct').textContent = Math.round(pct) + '%';
+  $('#ldArc').style.strokeDashoffset = (100 - pct).toFixed(1);
+}
+let introTo = null;
+async function boot() {
+  setStep('Рисуем текстуры пола и стен', 12);
+  await nextFrame();
+  state = loadState();
+  for (const r of ROOMS) floorTex(state.rooms[r.id].floor);
+  setStep('Возводим стены, окна и двери', 26);
+  await nextFrame();
+  buildPlan();
+  applyWalls(false);
+  applyFloors(null);
+  drawSky(); drawStars();
+  const list = state.items, step = 9;
+  for (let i = 0; i < list.length; i += step) {
+    setStep(`Расставляем мебель · ${Math.min(list.length, i + step)} из ${list.length}`, 30 + 40 * i / list.length);
+    await nextFrame();
+    for (const data of list.slice(i, i + step)) createItem(data, false);
+  }
+  setStep('Включаем свет и тени', 74);
+  await nextFrame();
+  applyTime(); assignShadowLights();
+  setStep('Готовим шейдеры для вашей видеокарты', 84);
+  await nextFrame();
+  // compile every material once, with lamps glowing, so day and night never stall later
+  const glows = []; for (const it of items) if (it.glow) { glows.push([it.glow, it.glow.visible]); it.glow.visible = true; }
+  placeCam(cam, camera);
+  renderer.compile(scene, camera);
+  if (settings.refl) renderReflection();
+  renderer.shadowMap.needsUpdate = true;
+  renderer.render(scene, camera);
+  for (const [g, v] of glows) g.visible = v;
+  setStep('Готово', 100);
+  await nextFrame();
+  window.addEventListener('resize', () => { drawSky(); drawStars(); });
+  introTo = { dist: fitDistance(), yaw: 0, pitch: .96 };
+  setTimeout(() => flyTo(introTo, 1900), 250);
+  last = performance.now();
+  requestAnimationFrame(frame);
+  setTimeout(() => $('#loading').classList.add('done'), 150);
+  if (!store.get(KEY + ':hello')) setTimeout(() => $('#hello').classList.add('show'), 1100);
+}
+// intro: start high above, then fly in once everything is built
 want.pitch = .96;
-const introTo = { dist: fitDistance(), yaw: 0, pitch: .96 };
-Object.assign(want, { dist: introTo.dist * 1.8, yaw: -1.1, pitch: 1.4 });
+Object.assign(want, { dist: fitDistance() * 1.8, yaw: -1.1, pitch: 1.4 });
 Object.assign(cam, want);
 placeCam(cam, camera);
-setTimeout(() => flyTo(introTo, 1900), 250);
 syncTilt();
 
 let last = performance.now();
@@ -3150,6 +3264,13 @@ function frame(now) {
   active = updateItems(dt) || active;
   active = updateFades(dt) || active;
   if (timePlay) { tod = (tod + dt * 24 / 60) % 24; applyTime(); active = true; }
+  if (lightsDirty || (drag && drag.it.light)) assignShadowLights();
+  if (shadowDirty && settings.shadows) {
+    // while the time is being scrubbed, refresh shadows at most ~8 times a second
+    const gap = now - lastTimeChange < 250 ? 120 : 0;
+    if (now - lastShadowT >= gap) { renderer.shadowMap.needsUpdate = true; shadowDirty = false; lastShadowT = now; dirty = Math.max(dirty, 1); }
+    else active = true;
+  }
   if (active || dirty > 0) {
     if (settings.refl) renderReflection();
     renderer.render(scene, camera);
@@ -3158,15 +3279,12 @@ function frame(now) {
     if (!active) dirty--;
   }
 }
-requestAnimationFrame((t) => {
-  last = t;
-  frame(t);
-  setTimeout(() => $('#loading').classList.add('done'), 120);
-  if (!store.get(KEY + ':hello')) setTimeout(() => $('#hello').classList.add('show'), 900);
+boot().catch((e) => {
+  $('#loadingText').textContent = 'Не удалось собрать квартиру: ' + (e && e.message ? e.message : e) + '. Обновите страницу.';
 });
 $('#helloGo').addEventListener('click', () => { $('#hello').classList.remove('show'); store.set(KEY + ':hello', '1'); });
 
-window.__apt = { setTime: (t) => { tod = t; applyTime(); }, items, segs, cam, want, state: () => state, select, openTab, DEFS, invalidate, collides, wallRects, beginDrag, dragMove, endDrag, groundAt, camera };
+window.__apt = { renderer, setTime: (t) => { tod = t; applyTime(); }, items, segs, cam, want, state: () => state, select, openTab, DEFS, invalidate, collides, wallRects, beginDrag, dragMove, endDrag, groundAt, camera };
 })();
 </script>
 </body>
