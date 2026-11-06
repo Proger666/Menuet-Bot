@@ -205,6 +205,9 @@ body.mobile .glass, body.mobile .rlabel { background: var(--glass-m); -webkit-ba
 .tiles.strip { display: flex; overflow-x: auto; margin: 0 -14px; padding: 4px 14px 6px; scrollbar-width: none; }
 .tiles.strip::-webkit-scrollbar { display: none; }
 .tiles.strip .tile { flex: none; width: 62px; }
+.finish-name { margin: 0; color: var(--ink-2); font-size: 12px; font-weight: 600; text-align: center; }
+.panel[data-panel="floor"][data-tool="color"] #floorMats,
+.panel[data-panel="floor"][data-tool="material"] #floorSwatches { display: none; }
 .tile {
   position: relative; aspect-ratio: 1; max-width: 100%; border-radius: 18px; background-size: 180%; background-position: center;
   box-shadow: inset 0 0 0 1px rgba(0,0,0,.08), 0 3px 10px rgba(0,0,0,.08); transition: transform .3s var(--spring);
@@ -421,9 +424,13 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
       </div>
       <div class="swatches" id="wallSwatches"></div>
       <div class="tiles strip" id="wallFinishes"></div>
+      <p class="finish-name" id="wallFinishName"></p>
     </section>
     <section class="panel" data-panel="floor">
+      <div class="iseg" id="floorMode"><button data-v="color">Цвет</button><button data-v="material">Покрытие</button></div>
+      <div class="swatches" id="floorSwatches"></div>
       <div class="tiles" id="floorMats"></div>
+      <p class="finish-name" id="floorChoice"></p>
     </section>
     <section class="panel" data-panel="view">
       <svg class="minimap" id="minimap" aria-label="План квартиры"></svg>
@@ -591,13 +598,19 @@ scene.environment = makeEnv(renderer);
 /* room masks for point lights: every lamp lights only the room it stands in, so nothing leaks through walls
    (even when the walls are cut away). Injected into the shared shader chunks, so it applies to every material. */
 const ROOM_CLIP = { value: [] };
-T.ShaderChunk.common += '\nvarying vec3 vRoomWP;\nuniform vec4 uWave;\nuniform vec3 uWaveOld;\n';
+T.ShaderChunk.common += '\nvarying vec3 vRoomWP;\nuniform vec4 uWave;\nuniform vec3 uWaveOld;\nuniform sampler2D uWaveOldMap;\nuniform vec2 uWaveOldScale;\nuniform float uWaveOldNeutral;\nuniform float uWaveOldBase;\n';
 /* a colour change spreads as a wave from the touch point: inside the radius the new colour, outside the old one */
 T.ShaderChunk.color_fragment += [
   '',
-  'if ( uWave.w > 0.0 ) {',
+  'if ( uWave.w > 0.0 && uWave.w < 1e8 ) {',
   '\tfloat wk = 1.0 - smoothstep( uWave.w - 0.45, uWave.w, distance( vRoomWP, uWave.xyz ) );',
-  '\tdiffuseColor.rgb = mix( uWaveOld, diffuseColor.rgb, wk );',
+  '\tvec3 oldWave = uWaveOld;',
+  '\t#ifdef USE_MAP',
+  '\tvec3 oldTexel = mapTexelToLinear(texture2D(uWaveOldMap, vUv * uWaveOldScale)).rgb;',
+  '\tif (uWaveOldNeutral > 0.5) oldTexel = vec3(mix(1.0, clamp(dot(oldTexel, vec3(.2126, .7152, .0722)) / uWaveOldBase, .6, 1.35), .75));',
+  '\toldWave *= oldTexel;',
+  '\t#endif',
+  '\tdiffuseColor.rgb = mix( oldWave, diffuseColor.rgb, wk );',
   '}',
 ].join('\n');
 T.ShaderChunk.worldpos_vertex = T.ShaderChunk.worldpos_vertex.replace('worldPosition = modelMatrix * worldPosition;', 'worldPosition = modelMatrix * worldPosition;\n\tvRoomWP = worldPosition.xyz;');
@@ -613,29 +626,39 @@ T.ShaderChunk.lights_pars_begin = T.ShaderChunk.lights_pars_begin.replace('unifo
 T.ShaderChunk.lights_fragment_begin = T.ShaderChunk.lights_fragment_begin.replace('getPointDirectLightIrradiance( pointLight, geometry, directLight );',
   'getPointDirectLightIrradiance( pointLight, geometry, directLight );\n\t\tdirectLight.color *= roomMask( uRoomClip[ i ], vRoomWP );');
 function waveU(m) {
-  if (!m.userData.wave) { m.userData.wave = { value: new T.Vector4(0, 0, 0, 1e9) }; m.userData.waveOld = { value: new T.Color() }; }
+  if (!m.userData.wave) { m.userData.wave = { value: new T.Vector4(0, 0, 0, 1e9) }; m.userData.waveOld = { value: new T.Color() }; m.userData.waveOldMap = { value: m.map }; m.userData.waveOldScale = { value: new T.Vector2(1, 1) }; m.userData.waveOldNeutral = { value: 0 }; m.userData.waveOldBase = { value: 1 }; }
   return m.userData;
 }
 function withExtras(sh, mat) {
   sh.uniforms.uRoomClip = ROOM_CLIP;
-  const u = waveU(mat); sh.uniforms.uWave = u.wave; sh.uniforms.uWaveOld = u.waveOld;
+  const u = waveU(mat); sh.uniforms.uWave = u.wave; sh.uniforms.uWaveOld = u.waveOld; sh.uniforms.uWaveOldMap = u.waveOldMap; sh.uniforms.uWaveOldScale = u.waveOldScale; sh.uniforms.uWaveOldNeutral = u.waveOldNeutral; sh.uniforms.uWaveOldBase = u.waveOldBase;
 }
 T.MeshStandardMaterial.prototype.onBeforeCompile = function (sh) { withExtras(sh, this); };
 const waves = [];
-function waveColor(m, to, origin, maxR) {
-  if (m.color.equals(to)) return;
+function cancelWave(m) {
   const u = waveU(m);
+  u.wave.value.w = 1e9;
+  for (let i = waves.length - 1; i >= 0; i--) if (waves[i].u === u) waves.splice(i, 1);
+}
+function waveColor(m, to, origin, maxR, oldMap, oldNeutral) {
+  if (m.color.equals(to) && oldNeutral === undefined) return;
+  const u = waveU(m);
+  oldMap = oldMap || m.map;
+  u.waveOldMap.value = oldMap;
+  u.waveOldNeutral.value = oldNeutral === undefined ? 0 : oldNeutral;
+  u.waveOldBase.value = m.userData.floorBase ? m.userData.floorBase.value : 1;
+  if (oldMap && m.map) u.waveOldScale.value.set(oldMap.repeat.x / m.map.repeat.x, oldMap.repeat.y / m.map.repeat.y);
   u.waveOld.value.copy(m.color); m.color.copy(to);
   u.wave.value.set(origin.x, origin.y, origin.z, .001);
   for (let i = waves.length - 1; i >= 0; i--) if (waves[i].u === u) waves.splice(i, 1);
-  waves.push({ u, t0: performance.now(), dur: 420 + maxR * 150, R: maxR + .5 });
+  waves.push({ u, t0: performance.now(), dur: 1050 + maxR * 260, R: maxR + .5 });
   invalidate();
 }
 function updateWaves(now) {
   if (!waves.length) return false;
   for (let i = waves.length - 1; i >= 0; i--) {
     const w = waves[i], k = Math.min(1, (now - w.t0) / w.dur);
-    w.u.wave.value.w = .001 + EASE.out(k) * w.R;
+    w.u.wave.value.w = .001 + smooth(0, 1, k) * w.R;
     if (k >= 1) { w.u.wave.value.w = 1e9; waves.splice(i, 1); }
   }
   return true;
@@ -830,6 +853,10 @@ function texWall(kind) {
     }
     noise(g, N, 6000, .05, 0, R, 2);
   });
+  if (kind === 'linen') return texNoiseBase(0.64, '#f8f7f3', .025, 3500, 16, (g, N) => {
+    for (let x = 0; x < N; x += 4) { g.fillStyle = 'rgba(70,65,55,.035)'; g.fillRect(x, 0, 1, N); }
+    for (let y = 0; y < N; y += 5) { g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(0, y, N, 1); }
+  });
   if (kind === 'wallpaper') return canvasTex(512, 0.64, (g, N) => {
     g.fillStyle = '#f8f8f8'; g.fillRect(0, 0, N, N);
     const sw = N / 8;
@@ -858,13 +885,15 @@ function texWall(kind) {
 }
 const OAK = ['#c9a678', '#bf9b6c', '#d0b088', '#b88f61', '#d6b98f'];
 const FLOORS = [
-  { id: 'herring', name: 'Ёлочка, дуб', rough: .5, refl: .26, make: () => texHerring(OAK, 1.44) },
+  { id: 'herring', name: 'Паркет ёлочкой · дуб', rough: .5, refl: .26, make: () => texHerring(OAK, 1.44) },
   { id: 'oak', name: 'Дуб', rough: .55, refl: .2, make: () => texPlanks(OAK, 2.4, 12, 'rgba(40,24,10,.5)', .5) },
   { id: 'ash', name: 'Беленый дуб', rough: .6, refl: .16, make: () => texPlanks(['#e3d6c2', '#dccdb6', '#e8dccb', '#d6c6ad'], 2.4, 12, 'rgba(60,45,30,.35)', .5) },
   { id: 'walnut', name: 'Орех', rough: .45, refl: .3, make: () => texPlanks(['#6e4b33', '#7a543a', '#5f3f2b', '#86603f'], 2.4, 12, 'rgba(20,10,4,.6)', .5) },
   { id: 'greyoak', name: 'Серый дуб', rough: .6, refl: .16, make: () => texHerring(['#a9a39a', '#9d968c', '#b3ada3', '#928b81'], 1.44) },
   { id: 'tileBeige', name: 'Плитка 60×60', rough: .35, refl: .32, make: () => texTiles(1.2, 2, '#ddd3c4', .05, '#b5aa9b', 4) },
   { id: 'tileWhite', name: 'Мелкая плитка', rough: .25, refl: .3, make: () => texTiles(0.8, 8, '#eef0ef', .04, '#b9bebd', 4) },
+  { id: 'tileStone', name: 'Керамогранит · светлый камень', rough: .38, refl: .23, make: () => texTiles(1.2, 2, '#d7d5ce', .09, '#aaa9a3', 4) },
+  { id: 'tileConcrete', name: 'Керамогранит · бетон', rough: .55, refl: .16, make: () => texTiles(1.2, 2, '#aaa9a5', .08, '#858580', 4) },
   { id: 'marble', name: 'Мрамор', rough: .15, refl: .5, make: () => texMarble(1.2) },
   { id: 'terrazzo', name: 'Терраццо', rough: .3, refl: .3, make: () => texTerrazzo(1.0) },
   { id: 'checker', name: 'Шахматка', rough: .3, refl: .34, make: () => texChecker(1.2) },
@@ -874,18 +903,33 @@ const FLOORS = [
 ];
 const FINISHES = [
   { id: 'paint', name: 'Краска' }, { id: 'plaster', name: 'Штукатурка' }, { id: 'tile', name: 'Плитка' },
-  { id: 'brick', name: 'Кирпич' }, { id: 'wallpaper', name: 'Обои' }, { id: 'slats', name: 'Рейки' }, { id: 'concrete', name: 'Бетон' },
+  { id: 'brick', name: 'Кирпич' }, { id: 'wallpaper', name: 'Обои · узор' }, { id: 'linen', name: 'Обои · лён' }, { id: 'slats', name: 'Рейки' }, { id: 'concrete', name: 'Бетон' },
 ];
 const texCache = {};
 function floorTex(id) { const k = 'f:' + id; if (!texCache[k]) texCache[k] = (FLOORS.find((f) => f.id === id) || FLOORS[0]).make(); return texCache[k]; }
+function floorBase(tex) {
+  if (tex.userData.base) return tex.userData.base;
+  const c = document.createElement('canvas'); c.width = c.height = 16;
+  const g = c.getContext('2d'); g.drawImage(tex.userData.canvas, 0, 0, 16, 16);
+  const d = g.getImageData(0, 0, 16, 16).data;
+  let sum = 0;
+  for (let i = 0; i < d.length; i += 4) sum += .2126 * (d[i] / 255) ** 2.2 + .7152 * (d[i + 1] / 255) ** 2.2 + .0722 * (d[i + 2] / 255) ** 2.2;
+  return tex.userData.base = Math.max(.08, sum / 256);
+}
 function wallTex(id) { const k = 'w:' + id; if (!texCache[k]) texCache[k] = texWall(id); return texCache[k]; }
 
 /* world-space UVs: textures keep their real size on any wall height or room size */
 /* walls: world UVs and a soft contact shadow where the wall meets the floor */
 function worldUV(mat) {
   mat.dithering = true;
+  mat.userData.oldWallMap = { value: mat.map };
+  mat.userData.oldWallScale = { value: new T.Vector2(1, 1) };
+  mat.userData.wallRoll = { value: new T.Vector4(-1, 0, 0, .64) };
   mat.onBeforeCompile = (sh) => {
     withExtras(sh, mat);
+    sh.uniforms.uOldWallMap = mat.userData.oldWallMap;
+    sh.uniforms.uOldWallScale = mat.userData.oldWallScale;
+    sh.uniforms.uWallRoll = mat.userData.wallRoll;
     sh.vertexShader = 'varying float vWY;\n' + sh.vertexShader.replace('#include <begin_vertex>', [
       '#include <begin_vertex>',
       'vec4 wpUV = modelMatrix * vec4(transformed, 1.0);',
@@ -896,7 +940,20 @@ function worldUV(mat) {
       'vUv = (uvTransform * vec3(tuv, 1.0)).xy;',
       '#endif',
     ].join('\n'));
-    sh.fragmentShader = 'varying float vWY;\n' + sh.fragmentShader.replace('#include <tonemapping_fragment>', [
+    sh.fragmentShader = 'varying float vWY;\nuniform sampler2D uOldWallMap;\nuniform vec2 uOldWallScale;\nuniform vec4 uWallRoll;\n' + sh.fragmentShader.replace('#include <map_fragment>', [
+      '#ifdef USE_MAP',
+      'vec4 wallTexel = mapTexelToLinear(texture2D(map, vUv));',
+      'if (uWallRoll.x >= 0.0) {',
+      '  vec4 oldWall = mapTexelToLinear(texture2D(uOldWallMap, vUv * uOldWallScale));',
+      '  float along = uWallRoll.y < 0.5 ? vRoomWP.x : vRoomWP.z;',
+      '  float strip = max(0.0, floor((along - uWallRoll.z) / uWallRoll.w));',
+      '  float rolled = clamp((uWallRoll.x - strip * uWallRoll.w) / uWallRoll.w, 0.0, 1.0);',
+      '  float reveal = rolled >= 1.0 ? 1.0 : rolled <= 0.0 ? 0.0 : smoothstep(2.7 * (1.0 - rolled) - 0.1, 2.7 * (1.0 - rolled) + 0.1, vWY);',
+      '  wallTexel = mix(oldWall, wallTexel, reveal);',
+      '}',
+      'diffuseColor *= wallTexel;',
+      '#endif',
+    ].join('\n')).replace('#include <tonemapping_fragment>', [
       'gl_FragColor.rgb *= mix(.62, 1., smoothstep(.0, .55, vWY)) * mix(1., .93, smoothstep(2.2, 2.7, vWY));',
       '#include <tonemapping_fragment>',
     ].join('\n'));
@@ -911,10 +968,13 @@ function floorShader(mat, rect) {
   mat.dithering = true;
   mat.userData.refl = { value: .2 };
   mat.userData.room = { value: new T.Vector4(rect[0], rect[1], rect[2], rect[3]) };
+  mat.userData.floorNeutral = { value: 0 };
+  mat.userData.floorBase = { value: 1 };
   mat.onBeforeCompile = (sh) => {
     withExtras(sh, mat);
     sh.uniforms.tReflect = REFL.tReflect; sh.uniforms.uReflMatrix = REFL.uReflMatrix; sh.uniforms.uReflTexel = REFL.uReflTexel;
     sh.uniforms.uReflOn = REFL.uReflOn; sh.uniforms.uRefl = mat.userData.refl; sh.uniforms.uRoom = mat.userData.room;
+    sh.uniforms.uFloorNeutral = mat.userData.floorNeutral; sh.uniforms.uFloorBase = mat.userData.floorBase;
     sh.vertexShader = 'uniform mat4 uReflMatrix;\nvarying vec4 vReflUv;\nvarying vec3 vWPosR;\n' + sh.vertexShader.replace('#include <begin_vertex>', [
       '#include <begin_vertex>',
       'vec4 wpR = modelMatrix * vec4(transformed, 1.0);',
@@ -923,7 +983,16 @@ function floorShader(mat, rect) {
       'vUv = (uvTransform * vec3(wpR.x, -wpR.z, 1.0)).xy;',
       '#endif',
     ].join('\n'));
-    sh.fragmentShader = 'uniform sampler2D tReflect;\nuniform float uRefl;\nuniform float uReflOn;\nuniform vec2 uReflTexel;\nuniform vec4 uRoom;\nvarying vec4 vReflUv;\nvarying vec3 vWPosR;\n' + sh.fragmentShader.replace('#include <tonemapping_fragment>', [
+    sh.fragmentShader = 'uniform float uFloorNeutral;\nuniform float uFloorBase;\nuniform sampler2D tReflect;\nuniform float uRefl;\nuniform float uReflOn;\nuniform vec2 uReflTexel;\nuniform vec4 uRoom;\nvarying vec4 vReflUv;\nvarying vec3 vWPosR;\n' + sh.fragmentShader.replace('#include <map_fragment>', [
+      '#ifdef USE_MAP',
+      'vec4 floorTexel = mapTexelToLinear(texture2D(map, vUv));',
+      'if (uFloorNeutral > 0.5) {',
+      '  float grain = clamp(dot(floorTexel.rgb, vec3(.2126, .7152, .0722)) / uFloorBase, .6, 1.35);',
+      '  floorTexel.rgb = vec3(mix(1.0, grain, .75));',
+      '}',
+      'diffuseColor *= floorTexel;',
+      '#endif',
+    ].join('\n')).replace('#include <tonemapping_fragment>', [
       '{',
       '  float dEdge = min(min(vWPosR.x - uRoom.x, uRoom.y - vWPosR.x), min(vWPosR.z - uRoom.z, uRoom.w - vWPosR.z));',
       '  gl_FragColor.rgb *= mix(.6, 1., smoothstep(.04, .5, dEdge));',
@@ -2083,27 +2152,60 @@ function roomWave(room) {
   if (!r || !r.rects) return { o: new T.Vector3(CX, 1.3, CZ), R: 12 };
   return { o: new T.Vector3(r.cx, 1.3, r.cz), R: Math.hypot(r.x2 - r.x1, r.z2 - r.z1) / 2 + H };
 }
+const wallRolls = [];
+function cancelWallRoll(w) {
+  w.mat.userData.wallRoll.value.x = -1;
+  for (let i = wallRolls.length - 1; i >= 0; i--) if (wallRolls[i].w === w) wallRolls.splice(i, 1);
+}
+function rollWallpaper(w, oldMap, newMap) {
+  const u = w.mat.userData;
+  cancelWallRoll(w);
+  u.oldWallMap.value = oldMap;
+  u.oldWallScale.value.set(oldMap.repeat.x / newMap.repeat.x, oldMap.repeat.y / newMap.repeat.y);
+  u.wallRoll.value.set(0, w.seg.o === 'h' ? 0 : 1, w.seg.a, .64);
+  wallRolls.push({ w, t0: performance.now(), dur: 1300 + (w.seg.b - w.seg.a) * 400 });
+}
+function updateWallRolls(now) {
+  if (!wallRolls.length) return false;
+  for (let i = wallRolls.length - 1; i >= 0; i--) {
+    const q = wallRolls[i], k = Math.min(1, (now - q.t0) / q.dur);
+    q.w.mat.userData.wallRoll.value.x = smooth(0, 1, k) * (q.w.seg.b - q.w.seg.a + .64);
+    if (k === 1) { q.w.mat.userData.wallRoll.value.x = -1; wallRolls.splice(i, 1); }
+  }
+  return true;
+}
 function applyWalls(anim, origin) {
   for (const key of Object.keys(wallMats)) {
     const w = wallMats[key], st = wallStyle(key), to = lin(st.c);
     const tex = wallTex(st.f);
-    if (w.mat.map !== tex) { w.mat.map = tex; w.mat.needsUpdate = true; }
+    const oldMap = w.mat.map;
+    if (w.mat.map !== tex) {
+      if (anim && (st.f === 'wallpaper' || st.f === 'linen')) rollWallpaper(w, w.mat.map, tex);
+      else cancelWallRoll(w);
+      w.mat.map = tex; w.mat.needsUpdate = true;
+    }
     if (!anim || w.mat.color.equals(to)) { w.mat.color.copy(to); continue; }
     const rw = roomWave(w.room);
-    waveColor(w.mat, to, origin || rw.o, origin ? rw.R * 2 : rw.R);
+    waveColor(w.mat, to, origin || rw.o, origin ? rw.R * 2 : rw.R, oldMap);
   }
   invalidate();
 }
-function applyFloors(animRoom) {
+function applyFloors(animRoom, origin) {
   for (const r of ROOMS) {
     const f = FLOORS.find((q) => q.id === state.rooms[r.id].floor) || FLOORS[0];
     const tex = floorTex(f.id), m = r.floor.material;
+    const wasNeutral = m.userData.floorNeutral.value;
+    const neutral = state.rooms[r.id].floorColor ? 1 : 0;
     if (m.map !== tex) {
       m.map = tex; m.roughness = f.rough; m.needsUpdate = true; m.userData.refl.value = f.refl;
-      if (animRoom === r.id || animRoom === '*') {
-        tween(520, (k) => { const v = .55 + .45 * k; m.color.setRGB(v, v, v); });
-      }
     }
+    m.userData.floorBase.value = floorBase(tex);
+    m.userData.floorNeutral.value = neutral;
+    const to = lin(state.rooms[r.id].floorColor || '#ffffff');
+    if ((animRoom === r.id || animRoom === '*') && (!m.color.equals(to) || wasNeutral !== neutral)) {
+      const rw = roomWave(r.id);
+      waveColor(m, to, origin || rw.o, rw.R * 2, m.map, wasNeutral);
+    } else if (animRoom !== r.id && animRoom !== '*') m.color.copy(to);
   }
   invalidate();
 }
@@ -2278,6 +2380,7 @@ function deselect() {
   selected = null; setRing(null);
   $('#selbar').classList.remove('show');
   $('#colorpop').classList.remove('on');
+  $('#sColor').classList.remove('on');
   invalidate();
 }
 function updateSelbar() {
@@ -2289,8 +2392,8 @@ function updateSelbar() {
   $('#selbar').classList.toggle('warn', collides(selected));
   const lb = $('#sLight'); lb.hidden = !d.light;
   if (d.light) { const on = lampIsOn(selected); lb.classList.toggle('on', on); $('#sLightUse').setAttribute('href', on ? '#i-bulb' : '#i-bulb-off'); }
-  renderSwatches($('#swA'), FURN_COLORS, selected.a, (hex) => { pushHistory(); setItemColor(selected, 'a', hex); save(); updateSelbar(); }, true);
-  renderSwatches($('#swB'), FURN_COLORS, selected.b, (hex) => { pushHistory(); setItemColor(selected, 'b', hex); save(); updateSelbar(); }, true);
+  renderSwatches($('#swA'), FURN_COLORS, selected.a, (hex) => { pushHistory(); setItemColor(selected, 'a', hex); save(); updateSelbar(); $('#colorpop').classList.remove('on'); $('#sColor').classList.remove('on'); }, true);
+  renderSwatches($('#swB'), FURN_COLORS, selected.b, (hex) => { pushHistory(); setItemColor(selected, 'b', hex); save(); updateSelbar(); $('#colorpop').classList.remove('on'); $('#sColor').classList.remove('on'); }, true);
 }
 function rotateSelected(dir) {
   if (!selected) return;
@@ -2432,7 +2535,7 @@ function updateItems(dt) {
 const pointers = new Map();
 let gesture = null;
 let inertia = null;
-const isPaintMode = () => sheetOpen && (activeTab === 'walls' || activeTab === 'floor');
+const isPaintMode = () => (sheetOpen || paintArmed) && (activeTab === 'walls' || activeTab === 'floor');
 function vibrate(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* not supported */ } }
 function pinchInfo() {
   const [a, b] = Array.from(pointers.values());
@@ -2446,6 +2549,7 @@ function panBy(x0, y0, x1, y1) {
 }
 function stopInertia() { inertia = null; }
 canvas.addEventListener('pointerdown', (e) => {
+  cancelAutoDemo();
   if (demoActive) { stopDemo(); return; }
   try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now() });
@@ -2578,8 +2682,16 @@ function handleTap(x, y, hit) {
   if (selected) deselect();
 }
 function paintWallAt(x, y) {
-  const h = pick(x, y, pickables.concat(wallMeshes));
+  const h = pick(x, y, pickables.concat(wallMeshes, floorMeshes));
   if (!h) return;
+  if (h.object.userData.room && !h.object.userData.seg) {
+    const room = h.object.userData.room;
+    if (state.rooms[room].floorColor === paint.color) return;
+    pushHistory(); state.rooms[room].floorColor = paint.color; paint.floorTool = 'color';
+    applyFloors(room, h.point); save(); pulseAt(x, y);
+    toast(dotHtml(`background-color:${paint.color}`) + icon('i-floor'), true);
+    return;
+  }
   if (h.object.userData.item) {
     const it = h.object.userData.item;
     pushHistory(); setItemColor(it, 'a', paint.color, true, h.point); save();
@@ -2605,15 +2717,16 @@ function paintWallAt(x, y) {
 function paintFloorAt(x, y) {
   const h = pick(x, y, floorMeshes);
   if (!h) return;
-  setFloor(h.object.userData.room, x, y);
+  setFloor(h.object.userData.room, x, y, h.point);
 }
-function setFloor(room, x, y) {
-  if (state.rooms[room].floor === paint.floor) return;
+function setFloor(room, x, y, point) {
+  if (paint.floorTool === 'color' ? state.rooms[room].floorColor === paint.color : state.rooms[room].floor === paint.floor) return;
   pushHistory();
-  state.rooms[room].floor = paint.floor;
-  applyFloors(room); save();
+  if (paint.floorTool === 'color') state.rooms[room].floorColor = paint.color;
+  else state.rooms[room].floor = paint.floor;
+  applyFloors(room, point); save();
   if (x !== undefined) pulseAt(x, y);
-  toast(dotHtml(`background-image:url(${texThumb(floorTex(paint.floor))})`) + icon('i-floor'), true);
+  toast(dotHtml(paint.floorTool === 'color' ? `background-color:${paint.color}` : `background-image:url(${texThumb(floorTex(paint.floor))})`) + icon('i-floor'), true);
 }
 
 window.addEventListener('keydown', (e) => {
@@ -2631,8 +2744,9 @@ const FURN_COLORS = ['#f3f1ec', '#ede8df', '#e3d6c2', '#c9a77c', '#a57c55', '#7b
   '#3e5566', '#a8b8ad', '#7d8b6a', '#4b7a44', '#a7735a', '#c46b4b', '#c9a64a', '#b68c9a', '#e9e4da', '#4fd1c5'];
 const CAT_ICONS = { living: 'i-sofa', wall: 'i-shelf', bedroom: 'i-bed', work: 'i-pc', kitchen: 'i-pot', bath: 'i-bath', light: 'i-bulb', decor: 'i-plant' };
 const TAB_ORDER = ['furniture', 'walls', 'floor', 'view'];
-const paint = { color: '#c4ceb6', finish: 'paint', floor: 'herring', scope: 'room' };
+const paint = { color: '#c4ceb6', finish: 'paint', floor: 'herring', floorTool: 'material', scope: 'room' };
 let activeTab = null, sheetOpen = false;
+let paintArmed = false;
 const icon = (id) => `<svg class="ico"><use href="#${id}"/></svg>`;
 
 /* a sliding pill under the active button of a segmented row */
@@ -2674,7 +2788,7 @@ function brushStyle(el, color, finish) {
   el.style.backgroundBlendMode = 'multiply';
 }
 function renderWallsPanel() {
-  renderSwatches($('#wallSwatches'), WALL_COLORS, paint.color, (c) => { paint.color = c; renderWallsPanel(); }, true);
+  renderSwatches($('#wallSwatches'), WALL_COLORS, paint.color, (c) => { paint.color = c; paint.floorTool = 'color'; renderWallsPanel(); }, true);
   const fin = $('#wallFinishes');
   if (!fin.children.length) {
     FINISHES.forEach((f, i) => {
@@ -2686,22 +2800,28 @@ function renderWallsPanel() {
     });
   }
   for (const b of fin.children) { b.classList.toggle('on', b.dataset.id === paint.finish); brushStyle(b, paint.color, b.dataset.id); }
+  $('#wallFinishName').textContent = 'Отделка: ' + (FINISHES.find((f) => f.id === paint.finish) || FINISHES[0]).name;
   brushStyle($('#brush'), paint.color, paint.finish);
   segPill($('#paintScope'));
 }
 function renderFloorPanel() {
+  $('#floorMode').querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === paint.floorTool));
+  segPill($('#floorMode'));
+  $('[data-panel="floor"]').dataset.tool = paint.floorTool;
+  renderSwatches($('#floorSwatches'), WALL_COLORS, paint.color, (c) => { paint.color = c; paint.floorTool = 'color'; paintArmed = true; renderFloorPanel(); }, true);
   const el = $('#floorMats');
   if (!el.children.length) {
     FLOORS.forEach((f, i) => {
       const b = document.createElement('button'); b.className = 'tile'; b.style.setProperty('--i', i);
       b.setAttribute('aria-label', f.name); b.title = f.name; b.dataset.id = f.id;
       b.style.backgroundImage = `url(${texThumb(floorTex(f.id))})`;
-      b.addEventListener('click', () => { paint.floor = f.id; renderFloorPanel(); });
+      b.addEventListener('click', () => { paint.floor = f.id; paint.floorTool = 'material'; paintArmed = true; renderFloorPanel(); });
       makePaintDrag(b, { kind: 'floor', value: f.id });
       el.appendChild(b);
     });
   }
   for (const b of el.children) b.classList.toggle('on', b.dataset.id === paint.floor);
+  $('#floorChoice').textContent = paint.floorTool === 'color' ? 'Цвет пола · нажмите на пол' : 'Покрытие: ' + (FLOORS.find((f) => f.id === paint.floor) || FLOORS[0]).name + ' · нажмите на пол';
 }
 let catActive = 'living';
 function renderCatalog() {
@@ -2815,11 +2935,12 @@ function moveTabPill() {
   pill.classList.add('on');
 }
 function openTab(tab) {
+  cancelAutoDemo();
   if (demoActive) stopDemo();
   if (sheetOpen && activeTab === tab) { closeSheet(); return; }
   const prev = sheetOpen ? TAB_ORDER.indexOf(activeTab) : -1;
   const body = $('#sheetBody'), h0 = sheetOpen ? body.offsetHeight : 0;
-  activeTab = tab; sheetOpen = true;
+  activeTab = tab; sheetOpen = true; paintArmed = tab === 'walls' || tab === 'floor';
   if (selected) deselect();
   $$('.tab').forEach((t) => t.classList.toggle('on', t.dataset.tab === tab));
   moveTabPill();
@@ -2840,7 +2961,7 @@ function openTab(tab) {
 function closeSheet() {
   sheetOpen = false;
   $('#sheet').classList.remove('open');
-  $$('.tab').forEach((t) => t.classList.remove('on'));
+  $$('.tab').forEach((t) => t.classList.toggle('on', paintArmed && t.dataset.tab === activeTab));
   moveTabPill();
 }
 $$('.tab').forEach((t) => t.addEventListener('click', () => openTab(t.dataset.tab)));
@@ -2858,6 +2979,7 @@ $$('.tab').forEach((t) => t.addEventListener('click', () => openTab(t.dataset.ta
   grab.addEventListener('pointerup', end); grab.addEventListener('pointercancel', end);
 })();
 $('#btnUndo').addEventListener('click', undo);
+$$('#floorMode button').forEach((b) => b.addEventListener('click', () => { paint.floorTool = b.dataset.v; paintArmed = true; renderFloorPanel(); }));
 $('#sRotL').addEventListener('click', () => rotateSelected(1));
 $('#sRotR').addEventListener('click', () => rotateSelected(-1));
 $('#sDel').addEventListener('click', deleteSelected);
@@ -2914,18 +3036,8 @@ const dotHtml = (style) => `<span class="dot" style="${style}"></span>`;
 $('#toastBtn').addEventListener('click', () => { undo(); $('#toast').classList.remove('show'); });
 
 /* drag a colour, finish or floor out of the sheet: whatever is under the finger previews it, lifting the finger applies it */
-const colorFades = new Map();
-function fadeColor(m, to) { colorFades.set(m, to.clone()); invalidate(); }
-function updateFades(dt) {
-  if (!colorFades.size) return false;
-  const k = 1 - Math.exp(-dt * 18);
-  for (const [m, to] of colorFades) {
-    m.color.lerp(to, k);
-    if (Math.abs(m.color.r - to.r) + Math.abs(m.color.g - to.g) + Math.abs(m.color.b - to.b) < .002) { m.color.copy(to); colorFades.delete(m); }
-  }
-  return true;
-}
 let pdrag = null, suppressClick = false;
+let paintPointer = null;
 document.addEventListener('click', (e) => { if (suppressClick) { e.stopPropagation(); e.preventDefault(); suppressClick = false; } }, true);
 function ghostStyle(p) {
   if (p.kind === 'color') return `background-color:${p.value}`;
@@ -2935,10 +3047,12 @@ function ghostStyle(p) {
 function makePaintDrag(el, payload) {
   el.style.touchAction = 'none';
   el.addEventListener('pointerdown', (e) => {
-    if (e.button) return;
-    const st = { x: e.clientX, y: e.clientY, on: false };
+    if (e.button || paintPointer !== null) return;
+    paintPointer = e.pointerId;
+    const st = { x: e.clientX, y: e.clientY, on: false, done: false };
     try { el.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
     const move = (ev) => {
+      if (ev.pointerId !== e.pointerId || st.done) return;
       if (!st.on) {
         if (Math.hypot(ev.clientX - st.x, ev.clientY - st.y) < 9) return;
         st.on = true; startPaintDrag(payload);
@@ -2946,10 +3060,22 @@ function makePaintDrag(el, payload) {
       movePaintDrag(ev.clientX, ev.clientY);
     };
     const up = (ev) => {
-      el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up);
-      if (st.on) { suppressClick = true; setTimeout(() => { suppressClick = false; }, 400); endPaintDrag(ev.type === 'pointerup', ev.clientX, ev.clientY); }
+      if (ev && ev.pointerId !== undefined && ev.pointerId !== e.pointerId || st.done) return;
+      st.done = true;
+      paintPointer = null;
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up, true);
+      window.removeEventListener('pointercancel', up, true);
+      window.removeEventListener('blur', cancel);
+      el.removeEventListener('lostpointercapture', cancel);
+      if (st.on) { suppressClick = true; setTimeout(() => { suppressClick = false; }, 400); endPaintDrag(!!ev && ev.type === 'pointerup', ev ? ev.clientX : st.x, ev ? ev.clientY : st.y); }
     };
-    el.addEventListener('pointermove', move); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+    const cancel = () => up(null);
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up, true);
+    window.addEventListener('pointercancel', up, true);
+    window.addEventListener('blur', cancel);
+    el.addEventListener('lostpointercapture', cancel);
   });
 }
 function startPaintDrag(payload) {
@@ -2965,9 +3091,9 @@ function movePaintDrag(x, y) {
   let hit = null, h;
   if (p.kind === 'floor') { h = pick(x, y, floorMeshes); if (h) hit = { type: 'floor', room: h.object.userData.room }; }
   else if (p.kind === 'finish') { h = pick(x, y, wallMeshes); if (h) hit = wallHit(h); }
-  else { h = pick(x, y, pickables.concat(wallMeshes)); if (h) hit = h.object.userData.item ? { type: 'item', item: h.object.userData.item } : wallHit(h); }
+  else { h = pick(x, y, pickables.concat(wallMeshes, p.kind === 'color' ? floorMeshes : [])); if (h) hit = h.object.userData.item ? { type: 'item', item: h.object.userData.item } : h.object.userData.seg ? wallHit(h) : { type: 'floor', room: h.object.userData.room }; }
   const id = !hit ? null : hit.type === 'floor' ? 'f:' + hit.room : hit.type === 'item' ? 'i:' + hit.item.uid : (paint.scope === 'room' ? 'r:' + hit.room : 'w:' + hit.key);
-  if (h) pdrag.point = h.point.clone();
+  pdrag.point = h ? h.point.clone() : null;
   pdrag.ghost.classList.toggle('hit', !!hit);
   if (id === pdrag.id) return;
   restorePreview();
@@ -2980,26 +3106,26 @@ function applyPreview(hit) {
   const p = pdrag.payload;
   const o = pdrag.point || roomWave(hit.room).o;
   if (hit.type === 'wall') for (const k of wallKeysFor(hit)) {
-    const m = wallMats[k].mat;
-    if (p.kind === 'color') waveColor(m, lin(p.value), o, roomWave(hit.room).R * 2); else m.map = wallTex(p.value);
+    const w = wallMats[k], m = w.mat; cancelWave(m); cancelWallRoll(w);
+    if (p.kind === 'color') m.color.copy(lin(p.value)); else { m.map = wallTex(p.value); m.needsUpdate = true; }
   }
-  if (hit.type === 'item') { const d = hit.item.def; waveColor(hit.item.matA, lin(p.value), o, Math.hypot(d.w, d.d, d.h)); }
+  if (hit.type === 'item') { cancelWave(hit.item.matA); hit.item.matA.color.copy(lin(p.value)); }
   if (hit.type === 'floor') {
-    const f = FLOORS.find((q) => q.id === p.value), m = ROOM[hit.room].floor.material;
-    m.map = floorTex(f.id); m.roughness = f.rough; m.userData.refl.value = f.refl;
-    m.color.setRGB(.7, .7, .7); fadeColor(m, new T.Color(1, 1, 1));
+    const m = ROOM[hit.room].floor.material;
+    cancelWave(m);
+    if (p.kind === 'color') { m.color.copy(lin(p.value)); m.userData.floorNeutral.value = 1; }
+    else { const f = FLOORS.find((q) => q.id === p.value); m.map = floorTex(f.id); m.roughness = f.rough; m.userData.refl.value = f.refl; m.userData.floorBase.value = floorBase(m.map); m.needsUpdate = true; }
   }
   invalidate();
 }
 function restorePreview() {
   const hit = pdrag && pdrag.hit;
   if (!hit) return;
-  const o = pdrag.point || roomWave(hit.room).o;
-  if (hit.type === 'wall') for (const k of wallKeysFor(hit)) { const st = wallStyle(k); waveColor(wallMats[k].mat, lin(st.c), o, roomWave(hit.room).R * 2); wallMats[k].mat.map = wallTex(st.f); }
-  if (hit.type === 'item' && !hit.item.dying) { const d = hit.item.def; waveColor(hit.item.matA, lin(hit.item.a), o, Math.hypot(d.w, d.d, d.h)); }
+  if (hit.type === 'wall') for (const k of wallKeysFor(hit)) { const st = wallStyle(k), w = wallMats[k], m = w.mat; cancelWave(m); cancelWallRoll(w); m.color.copy(lin(st.c)); m.map = wallTex(st.f); m.needsUpdate = true; }
+  if (hit.type === 'item' && !hit.item.dying) { cancelWave(hit.item.matA); hit.item.matA.color.copy(lin(hit.item.a)); }
   if (hit.type === 'floor') {
     const f = FLOORS.find((q) => q.id === state.rooms[hit.room].floor) || FLOORS[0], m = ROOM[hit.room].floor.material;
-    m.map = floorTex(f.id); m.roughness = f.rough; m.userData.refl.value = f.refl; fadeColor(m, new T.Color(1, 1, 1));
+    cancelWave(m); m.map = floorTex(f.id); m.roughness = f.rough; m.userData.refl.value = f.refl; m.color.copy(lin(state.rooms[hit.room].floorColor || '#ffffff')); m.userData.floorNeutral.value = state.rooms[hit.room].floorColor ? 1 : 0; m.userData.floorBase.value = floorBase(m.map); m.needsUpdate = true;
   }
   pdrag.hit = null; pdrag.id = null;
   invalidate();
@@ -3007,6 +3133,8 @@ function restorePreview() {
 function endPaintDrag(commit, x, y) {
   const p = pdrag.payload, hit = pdrag.hit;
   if (commit && hit) {
+    const point = pdrag.point;
+    restorePreview();
     pushHistory();
     if (hit.type === 'wall') {
       const c = p.kind === 'color' ? p.value : null, f = p.kind === 'finish' ? p.value : null;
@@ -3015,10 +3143,14 @@ function endPaintDrag(commit, x, y) {
         for (const k of Object.keys(state.walls)) if (wallMats[k] && wallMats[k].room === hit.room) delete state.walls[k];
       } else { const cur = wallStyle(hit.key); state.walls[hit.key] = { c: c || cur.c, f: f || cur.f }; }
       if (c) paint.color = c; if (f) paint.finish = f;
-      applyWalls(true, pdrag.point);
+      applyWalls(true, point);
     }
-    if (hit.type === 'item') { setItemColor(hit.item, 'a', p.value, true, pdrag.point); if (hit.item === selected) updateSelbar(); }
-    if (hit.type === 'floor') { state.rooms[hit.room].floor = p.value; paint.floor = p.value; applyFloors(null); }
+    if (hit.type === 'item') { setItemColor(hit.item, 'a', p.value, true, point); if (hit.item === selected) updateSelbar(); }
+    if (hit.type === 'floor') {
+      if (p.kind === 'color') { state.rooms[hit.room].floorColor = p.value; paint.color = p.value; paint.floorTool = 'color'; }
+      else { state.rooms[hit.room].floor = p.value; paint.floor = p.value; paint.floorTool = 'material'; }
+      applyFloors(hit.room, point);
+    }
     save();
     const el = document.createElement('div'); el.className = 'ripple'; el.style.left = x + 'px'; el.style.top = y + 'px';
     el.style.color = p.kind === 'color' ? p.value : 'var(--accent)';
@@ -3263,7 +3395,8 @@ function updatePlay() { $('#todPlay').classList.toggle('on', timePlay); }
   let sd = null;
   const todAt = (x) => { const r = skyEl.getBoundingClientRect(); return clamp((x - r.left) / r.width, 0, .9999) * 24; };
   skyEl.addEventListener('pointerdown', (e) => {
-    if (demoActive) { stopDemo(); return; }
+    cancelAutoDemo();
+  if (demoActive) { stopDemo(); return; }
     try { skyEl.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
     const r = skyEl.getBoundingClientRect();
     sd = { x0: e.clientX, onKnob: Math.abs(e.clientX - (r.left + tod / 24 * r.width)) < 30, moved: false };
@@ -3320,7 +3453,10 @@ function renderReflection() {
 }
 
 /* ------------------------------------------------------------------ demo tour: a flying camera shows the main features, then everything is put back */
-let demoActive = false, demoToken = 0, demoTimer = 0, demoWake = null;
+let demoActive = false, demoToken = 0, demoTimer = 0, demoWake = null, autoDemoTimer = 0;
+function cancelAutoDemo() { if (autoDemoTimer) { clearTimeout(autoDemoTimer); autoDemoTimer = 0; } }
+window.addEventListener('pointerdown', cancelAutoDemo, true);
+window.addEventListener('keydown', cancelAutoDemo, true);
 const dwait = (ms) => new Promise((r) => { demoWake = r; demoTimer = setTimeout(r, ms); });
 function stopDemo() {
   if (!demoActive) return;
@@ -3459,7 +3595,7 @@ async function boot() {
   last = performance.now();
   requestAnimationFrame(frame);
   setTimeout(() => $('#loading').classList.add('done'), 150);
-  if (!store.get(KEY + ':hello')) setTimeout(runDemo, 2400);
+  autoDemoTimer = setTimeout(() => { autoDemoTimer = 0; if (!paintArmed && !selected && !sheetOpen) runDemo(); }, 2400);
 }
 // intro: start high above, then fly in once everything is built
 want.pitch = .96;
@@ -3480,8 +3616,8 @@ function frame(now) {
   if (camMoving) { active = true; lightsDirty = true; }
   active = updateWalls(dt) || active;
   active = updateItems(dt) || active;
-  active = updateFades(dt) || active;
   active = updateWaves(now) || active;
+  active = updateWallRolls(now) || active;
   if (timePlay) { tod = (tod + dt * 24 / 60) % 24; applyTime(); active = true; }
   if (lightsDirty || (drag && drag.it.def.light)) assignLights();
   if (shadowDirty && settings.shadows) {
