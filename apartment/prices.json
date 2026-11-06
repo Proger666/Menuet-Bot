@@ -1,0 +1,901 @@
+{
+  "currency": "RUB",
+  "city": "Москва",
+  "asOf": "ноябрь 2026",
+  "furniture": {
+    "sofa": {
+      "low": 33000,
+      "mid": 49000,
+      "high": 73000,
+      "estimate": false,
+      "src": [
+        "https://hoff.ru/catalog/gostinaya/divany/pryamye/",
+        "https://www.divan.ru/category/divany",
+        "https://www.divan.ru/category/divany-belye",
+        "https://www.divan.ru/category/divany-bolshie",
+        "https://www.divan.ru/category/divany-dlina-200-sm",
+        "https://www.divan.ru/category/divany-dlya-sna",
+        "https://www.divan.ru/category/divany-i-kresla"
+      ]
+    },
+    "cornerSofa": {
+      "low": 49500,
+      "mid": 80000,
+      "high": 125600,
+      "estimate": false,
+      "src": [
+        "https://hoff.ru/catalog/gostinaya/divany/",
+        "https://hoff.ru/catalog/gostinaya/divany/uglovye/",
+        "https://www.divan.ru/category/bolshie-uglovye-divany",
+        "https://www.divan.ru/category/divany",
+        "https://www.divan.ru/category/divany-belye",
+        "https://www.divan.ru/category/divany-bolshie",
+        "https://www.divan.ru/category/divany-dlina-200-sm",
+        "https://www.divan.ru/category/divany-dlya-sna",
+        "https://www.divan.ru/category/divany-i-kresla",
+        "https://www.divan.ru/category/uglovye-divany"
+      ]
+    },
+    "armchair": {
+      "low": 15000,
+      "mid": 27000,
+      "high": 42700,
+      "estimate": false,
+      "src": [
+        "https://hoff.ru/catalog/gostinaya/kresla/",
+        "https://hoff.ru/catalog/kresla/ofisnye-kresla/",
+        "https://hoff.ru/catalog/kuhnya/obedennye_gruppy/kuhonnye_stulya/",
+        "https://hoff.ru/catalog/ofis/domashniy_ofis/ofisnye_kresla/stulia/",
+        "https://hoff.ru/catalog/promo/stulya/",
+        "https://www.divan.ru/category/divany-i-kresla",
+        "https://www.divan.ru/category/kresla",
+        "https://www.divan.ru/category/kresla-krovaty",
+        "https://www.divan.ru/category/myagkie-kresla",
+        "https://www.divan.ru/category/ofisnye-kresla"
+      ]
+    },
+    "coffeeTable": {
+      "low": 2400,
+      "mid": 5100,
+      "high": 13100,
+      "estimate": false,
+      "src": [
+        "https://hoff.ru/catalog/gostinaya/mebel_dlya_gostinykh/zhurnalnye_stoliki/",
+        "https://hoff.ru/catalog/promo/stoly/"
+      ]
+    },
+    "tvStand": {
+      "low": 25800,
+      "mid": 40000,
+      "high": 55000,
+      "estimate": false,
+      "src": [
+        "https://www.divan.ru/category/komody-pod-televizor"
+      ]
+    },
+    "tv": {
+      "low": 30000,
+      "mid": 50000,
+      "high": 85000,
+      "estimate": true,
+      "src": []
+    },
+    "rug": {
+      "low": 6000,
+      "mid": 14000,
+      "high": 32000,
+      "estimate": true,
+      "src": []
+    },
+    "rugLarge": {
+      "low": 12000,
+      "mid": 28000,
+      "high": 65000,
+      "estimate": true,
+      "src": []
+    },
+    "stBooks": {
+      "low": 6000,
+      "mid": 12000,
+      "high": 22000,
+      "estimate": true,
+      "src": []
+    },
+    "stGlass": {
+      "low": 7000,
+      "mid": 14000,
+      "high": 26000,
+      "estimate": true,
+      "src": []
+    },
+    "stClosed": {
+      "low": 7000,
+      "mid": 14000,
+      "high": 26000,
+      "estimate": true,
+      "src": []
+    },
+    "stTV": {
+      "low": 12000,
+      "mid": 24000,
+      "high": 45000,
+      "estimate": true,
+      "src": []
+    },
+    "stCorner": {
+      "low": 15000,
+      "mid": 30000,
+      "high": 55000,
+      "estimate": true,
+      "src": []
+    },
+    "bookshelf": {
+      "low": 5000,
+      "mid": 18000,
+      "high": 28000,
+      "estimate": false,
+      "src": [
+        "https://hoff.ru/catalog/gostinaya/mebel_dlya_gostinykh/stellazhy/",
+        "https://www.divan.ru/category/stellazhi"
+      ]
+    },
+    "hallUnit": {
+      "low": 16000,
+      "mid": 26000,
+      "high": 35800,
+      "estimate": false,
+      "src": [
+        "https://hoff.ru/catalog/prihozhaya/pufy_i_banketki/",
+        "https://hoff.ru/catalog/prihozhaya/shkafi_dlia_prihozhei/",
+        "https://www.divan.ru/category/komody-v-prihozhuju",
+        "https://www.divan.ru/category/mebel-dla-prihozej"
+      ]
+    },
+    "shoeRack": {
+      "low": 9000,
+      "mid": 13000,
+      "high": 19000,
+      "estimate": false,
+      "src": [
+        "https://www.divan.ru/category/obuvnicy"
+      ]
+    },
+    "doubleBed": {
+      "low": 28000,
+      "mid": 46000,
+      "high": 62800,
+      "estimate": false,
+      "src": [
+        "https://hoff.ru/catalog/spalnya/krovati/",
+        "https://www.divan.ru/category/krovati",
+        "https://www.divan.ru/category/krovati-dvuspalnye"
+      ]
+    },
+    "singleBed": {
+      "low": 15000,
+      "mid": 30000,
+      "high": 60000,
+      "estimate": true,
+      "src": []
+    },
+    "wardrobe": {
+      "low": 25500,
+      "mid": 43500,
+      "high": 81000,
+      "estimate": false,
+      "src": [
+        "https://hoff.ru/catalog/shkafy/",
+        "https://hoff.ru/catalog/shkafy/shkafy_kupe/",
+        "https://www.divan.ru/category/shkafy-kupe"
+      ]
+    },
+    "nightstand": {
+      "low": 6900,
+      "mid": 9000,
+      "high": 11600,
+      "estimate": false,
+      "src": [
+        "https://www.divan.ru/category/komody-i-tumby"
+      ]
+    },
+    "dresser": {
+      "low": 8300,
+      "mid": 21300,
+      "high": 30200,
+      "estimate": false,
+      "src": [
+        "https://hoff.ru/catalog/gostinaya/mebel_dlya_gostinykh/komody/",
+        "https://hoff.ru/catalog/komody/",
+        "https://www.divan.ru/category/komody",
+        "https://www.divan.ru/category/komody-i-tumby",
+        "https://www.divan.ru/category/komody-v-gostinuyu",
+        "https://www.divan.ru/category/komody-v-prihozhuju",
+        "https://www.divan.ru/category/komody-v-spalnju",
+        "https://www.divan.ru/category/mebel-dla-prihozej"
+      ]
+    },
+    "desk": {
+      "low": 16000,
+      "mid": 21000,
+      "high": 23000,
+      "estimate": false,
+      "src": [
+        "https://www.divan.ru/category/malenkie-pismennye-stoly",
+        "https://www.divan.ru/category/pismennye-stoly"
+      ]
+    },
+    "pcDesk": {
+      "low": 8600,
+      "mid": 13600,
+      "high": 19800,
+      "estimate": false,
+      "src": [
+        "https://hoff.ru/catalog/ofis/domashniy_ofis/komputernye_stoly/"
+      ]
+    },
+    "officeChair": {
+      "low": 9600,
+      "mid": 16000,
+      "high": 28800,
+      "estimate": false,
+      "src": [
+        "https://hoff.ru/catalog/kresla/ofisnye-kresla/",
+        "https://hoff.ru/catalog/ofis/domashniy_ofis/ofisnye_kresla/stulia/",
+        "https://hoff.ru/catalog/promo/stulya/",
+        "https://www.divan.ru/category/kompyuternye-kresla",
+        "https://www.divan.ru/category/ofisnye-kresla"
+      ]
+    },
+    "computer": {
+      "low": 15000,
+      "mid": 28000,
+      "high": 55000,
+      "estimate": true,
+      "src": []
+    },
+    "pcTower": {
+      "low": 60000,
+      "mid": 100000,
+      "high": 180000,
+      "estimate": true,
+      "src": []
+    },
+    "kBase": {
+      "low": 6000,
+      "mid": 12000,
+      "high": 24000,
+      "estimate": true,
+      "src": []
+    },
+    "kSink": {
+      "low": 10000,
+      "mid": 18000,
+      "high": 35000,
+      "estimate": true,
+      "src": []
+    },
+    "kStove": {
+      "low": 25000,
+      "mid": 45000,
+      "high": 90000,
+      "estimate": true,
+      "src": []
+    },
+    "kFridge": {
+      "low": 35000,
+      "mid": 70000,
+      "high": 150000,
+      "estimate": true,
+      "src": []
+    },
+    "kUpper": {
+      "low": 4000,
+      "mid": 8000,
+      "high": 16000,
+      "estimate": true,
+      "src": []
+    },
+    "kHood": {
+      "low": 8000,
+      "mid": 18000,
+      "high": 40000,
+      "estimate": true,
+      "src": []
+    },
+    "microwave": {
+      "low": 6000,
+      "mid": 10000,
+      "high": 20000,
+      "estimate": true,
+      "src": []
+    },
+    "diningTable": {
+      "low": 12000,
+      "mid": 16800,
+      "high": 23500,
+      "estimate": false,
+      "src": [
+        "https://hoff.ru/catalog/kuhnya/obedennye_gruppy/kuhonnye_stoly/"
+      ]
+    },
+    "chair": {
+      "low": 5000,
+      "mid": 12000,
+      "high": 21000,
+      "estimate": false,
+      "src": [
+        "https://hoff.ru/catalog/kuhnya/obedennye_gruppy/kuhonnye_stulya/",
+        "https://hoff.ru/catalog/ofis/domashniy_ofis/ofisnye_kresla/stulia/",
+        "https://hoff.ru/catalog/promo/stulya/",
+        "https://www.divan.ru/category/barnye-stulay",
+        "https://www.divan.ru/category/derevyannye-stulya",
+        "https://www.divan.ru/category/stulya"
+      ]
+    },
+    "roundTable": {
+      "low": 4000,
+      "mid": 10000,
+      "high": 25000,
+      "estimate": true,
+      "src": []
+    },
+    "bathtub": {
+      "low": 15000,
+      "mid": 30000,
+      "high": 60000,
+      "estimate": true,
+      "src": []
+    },
+    "toilet": {
+      "low": 8000,
+      "mid": 18000,
+      "high": 40000,
+      "estimate": true,
+      "src": []
+    },
+    "bathSink": {
+      "low": 10000,
+      "mid": 22000,
+      "high": 50000,
+      "estimate": true,
+      "src": []
+    },
+    "washer": {
+      "low": 25000,
+      "mid": 40000,
+      "high": 75000,
+      "estimate": true,
+      "src": []
+    },
+    "showerCabin": {
+      "low": 18000,
+      "mid": 35000,
+      "high": 75000,
+      "estimate": true,
+      "src": []
+    },
+    "bathCabinet": {
+      "low": 4000,
+      "mid": 9000,
+      "high": 20000,
+      "estimate": true,
+      "src": []
+    },
+    "radiator": {
+      "low": 15000,
+      "mid": 25000,
+      "high": 50000,
+      "estimate": true,
+      "src": []
+    },
+    "curtains": {
+      "low": 3000,
+      "mid": 7000,
+      "high": 20000,
+      "estimate": true,
+      "src": []
+    },
+    "curtainsWide": {
+      "low": 5000,
+      "mid": 12000,
+      "high": 30000,
+      "estimate": true,
+      "src": []
+    },
+    "plant": {
+      "low": 1500,
+      "mid": 4000,
+      "high": 12000,
+      "estimate": true,
+      "src": []
+    },
+    "smallPlant": {
+      "low": 300,
+      "mid": 800,
+      "high": 2500,
+      "estimate": true,
+      "src": []
+    },
+    "floorLamp": {
+      "low": 2500,
+      "mid": 6000,
+      "high": 18000,
+      "estimate": true,
+      "src": []
+    },
+    "tableLamp": {
+      "low": 1500,
+      "mid": 3500,
+      "high": 9000,
+      "estimate": true,
+      "src": []
+    },
+    "chandelier": {
+      "low": 4000,
+      "mid": 12000,
+      "high": 35000,
+      "estimate": true,
+      "src": []
+    },
+    "plafond": {
+      "low": 1500,
+      "mid": 3500,
+      "high": 9000,
+      "estimate": true,
+      "src": []
+    },
+    "pendant": {
+      "low": 2500,
+      "mid": 6000,
+      "high": 18000,
+      "estimate": true,
+      "src": []
+    },
+    "sconce": {
+      "low": 1500,
+      "mid": 3500,
+      "high": 10000,
+      "estimate": true,
+      "src": []
+    },
+    "candles": {
+      "low": 300,
+      "mid": 800,
+      "high": 2500,
+      "estimate": true,
+      "src": []
+    },
+    "picture": {
+      "low": 1000,
+      "mid": 3500,
+      "high": 12000,
+      "estimate": true,
+      "src": []
+    },
+    "mirrorWall": {
+      "low": 2000,
+      "mid": 5000,
+      "high": 15000,
+      "estimate": true,
+      "src": []
+    },
+    "vase": {
+      "low": 500,
+      "mid": 1500,
+      "high": 6000,
+      "estimate": true,
+      "src": []
+    },
+    "wickerChair": {
+      "low": 6000,
+      "mid": 14000,
+      "high": 30000,
+      "estimate": true,
+      "src": []
+    },
+    "runner": {
+      "low": 2500,
+      "mid": 5000,
+      "high": 12000,
+      "estimate": true,
+      "src": []
+    }
+  },
+  "floors": {
+    "herring": {
+      "material": {
+        "low": 3500,
+        "mid": 6500,
+        "high": 12000
+      },
+      "labor": {
+        "low": 1200,
+        "mid": 1800,
+        "high": 2800
+      },
+      "unit": "м²",
+      "estimate": true,
+      "src": []
+    },
+    "oak": {
+      "material": {
+        "low": 900,
+        "mid": 1800,
+        "high": 3500
+      },
+      "labor": {
+        "low": 350,
+        "mid": 500,
+        "high": 800
+      },
+      "unit": "м²",
+      "estimate": false,
+      "src": [
+        "https://www.vseinstrumenti.ru/tag-page/laminat-10-mm-18502"
+      ]
+    },
+    "ash": {
+      "material": {
+        "low": 3000,
+        "mid": 5000,
+        "high": 8000
+      },
+      "labor": {
+        "low": 500,
+        "mid": 650,
+        "high": 900
+      },
+      "unit": "м²",
+      "estimate": true,
+      "src": []
+    },
+    "walnut": {
+      "material": {
+        "low": 4500,
+        "mid": 7500,
+        "high": 12000
+      },
+      "labor": {
+        "low": 500,
+        "mid": 700,
+        "high": 1000
+      },
+      "unit": "м²",
+      "estimate": true,
+      "src": []
+    },
+    "greyoak": {
+      "material": {
+        "low": 4000,
+        "mid": 7000,
+        "high": 11000
+      },
+      "labor": {
+        "low": 1300,
+        "mid": 2000,
+        "high": 3000
+      },
+      "unit": "м²",
+      "estimate": true,
+      "src": []
+    },
+    "tileBeige": {
+      "material": {
+        "low": 900,
+        "mid": 1800,
+        "high": 3500
+      },
+      "labor": {
+        "low": 800,
+        "mid": 1200,
+        "high": 1800
+      },
+      "unit": "м²",
+      "estimate": true,
+      "src": []
+    },
+    "tileWhite": {
+      "material": {
+        "low": 800,
+        "mid": 1500,
+        "high": 3000
+      },
+      "labor": {
+        "low": 900,
+        "mid": 1300,
+        "high": 1900
+      },
+      "unit": "м²",
+      "estimate": true,
+      "src": []
+    },
+    "marble": {
+      "material": {
+        "low": 1200,
+        "mid": 2200,
+        "high": 4500
+      },
+      "labor": {
+        "low": 900,
+        "mid": 1300,
+        "high": 1900
+      },
+      "unit": "м²",
+      "estimate": true,
+      "src": []
+    },
+    "terrazzo": {
+      "material": {
+        "low": 1500,
+        "mid": 2800,
+        "high": 5500
+      },
+      "labor": {
+        "low": 900,
+        "mid": 1300,
+        "high": 1900
+      },
+      "unit": "м²",
+      "estimate": true,
+      "src": []
+    },
+    "checker": {
+      "material": {
+        "low": 1200,
+        "mid": 2200,
+        "high": 4000
+      },
+      "labor": {
+        "low": 1000,
+        "mid": 1400,
+        "high": 2000
+      },
+      "unit": "м²",
+      "estimate": true,
+      "src": []
+    },
+    "concrete": {
+      "material": {
+        "low": 2500,
+        "mid": 4000,
+        "high": 7000
+      },
+      "labor": {
+        "low": 3000,
+        "mid": 4500,
+        "high": 7000
+      },
+      "unit": "м²",
+      "estimate": true,
+      "src": []
+    },
+    "carpet": {
+      "material": {
+        "low": 600,
+        "mid": 1200,
+        "high": 2500
+      },
+      "labor": {
+        "low": 200,
+        "mid": 300,
+        "high": 450
+      },
+      "unit": "м²",
+      "estimate": true,
+      "src": []
+    },
+    "deck": {
+      "material": {
+        "low": 2500,
+        "mid": 4500,
+        "high": 8000
+      },
+      "labor": {
+        "low": 900,
+        "mid": 1400,
+        "high": 2200
+      },
+      "unit": "м²",
+      "estimate": true,
+      "src": []
+    }
+  },
+  "walls": {
+    "paint": {
+      "material": {
+        "low": 130,
+        "mid": 240,
+        "high": 360
+      },
+      "labor": {
+        "low": 300,
+        "mid": 450,
+        "high": 650
+      },
+      "unit": "м²",
+      "estimate": false,
+      "src": [
+        "https://price.ru/kraski/"
+      ]
+    },
+    "plaster": {
+      "material": {
+        "low": 500,
+        "mid": 900,
+        "high": 1800
+      },
+      "labor": {
+        "low": 800,
+        "mid": 1300,
+        "high": 2000
+      },
+      "unit": "м²",
+      "estimate": true,
+      "src": []
+    },
+    "tile": {
+      "material": {
+        "low": 600,
+        "mid": 1100,
+        "high": 2200
+      },
+      "labor": {
+        "low": 700,
+        "mid": 1000,
+        "high": 1500
+      },
+      "unit": "м²",
+      "estimate": true,
+      "src": []
+    },
+    "brick": {
+      "material": {
+        "low": 800,
+        "mid": 1600,
+        "high": 3000
+      },
+      "labor": {
+        "low": 600,
+        "mid": 900,
+        "high": 1400
+      },
+      "unit": "м²",
+      "estimate": true,
+      "src": []
+    },
+    "wallpaper": {
+      "material": {
+        "low": 60,
+        "mid": 180,
+        "high": 260
+      },
+      "labor": {
+        "low": 150,
+        "mid": 250,
+        "high": 400
+      },
+      "unit": "м²",
+      "estimate": false,
+      "src": [
+        "https://price.ru/oboi/"
+      ]
+    },
+    "slats": {
+      "material": {
+        "low": 1200,
+        "mid": 2500,
+        "high": 4500
+      },
+      "labor": {
+        "low": 900,
+        "mid": 1400,
+        "high": 2200
+      },
+      "unit": "м²",
+      "estimate": true,
+      "src": []
+    },
+    "concrete": {
+      "material": {
+        "low": 1500,
+        "mid": 2800,
+        "high": 5000
+      },
+      "labor": {
+        "low": 1500,
+        "mid": 2400,
+        "high": 3800
+      },
+      "unit": "м²",
+      "estimate": true,
+      "src": []
+    }
+  },
+  "labor": {
+    "wallPrep": {
+      "low": 350,
+      "mid": 550,
+      "high": 800,
+      "estimate": true,
+      "src": [],
+      "unit": "м²"
+    },
+    "floorScreed": {
+      "low": 500,
+      "mid": 800,
+      "high": 1200,
+      "estimate": true,
+      "src": [],
+      "unit": "м²"
+    },
+    "demolition": {
+      "low": 250,
+      "mid": 400,
+      "high": 650,
+      "estimate": true,
+      "src": [],
+      "unit": "м²"
+    },
+    "ceiling": {
+      "low": 800,
+      "mid": 1100,
+      "high": 1600,
+      "estimate": true,
+      "src": [
+        "https://profi.ru/remont/natyazhnoj-potolok-v-tualete/",
+        "https://tenchat.ru/1113400"
+      ],
+      "unit": "м²"
+    },
+    "electricPoint": {
+      "low": 1200,
+      "mid": 2000,
+      "high": 3200,
+      "estimate": true,
+      "src": [],
+      "unit": "точка"
+    },
+    "lightInstall": {
+      "low": 500,
+      "mid": 900,
+      "high": 1800,
+      "estimate": true,
+      "src": [],
+      "unit": "шт"
+    },
+    "plumbingPoint": {
+      "low": 2500,
+      "mid": 4000,
+      "high": 6500,
+      "estimate": true,
+      "src": [
+        "https://zoon.ru/msk/building/kompaniya_santehprof/price/"
+      ],
+      "unit": "точка"
+    },
+    "doorInstall": {
+      "low": 4000,
+      "mid": 6000,
+      "high": 9000,
+      "estimate": true,
+      "src": [],
+      "unit": "шт"
+    },
+    "furnitureAssembly": {
+      "low": 5,
+      "mid": 8,
+      "high": 12,
+      "estimate": true,
+      "src": [],
+      "unit": "%"
+    },
+    "delivery": {
+      "low": 1500,
+      "mid": 3000,
+      "high": 6000,
+      "estimate": true,
+      "src": [],
+      "unit": "заказ"
+    }
+  }
+}
