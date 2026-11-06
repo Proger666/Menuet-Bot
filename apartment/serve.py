@@ -5,10 +5,11 @@
     python3 apartment/serve.py --tunnel   # same, and start `cloudflared tunnel --url ...`
 
 Every response is sent with `Cache-Control: no-store`, so neither the tunnel nor Safari
-keeps an old copy. /version.json reports the commit currently checked out; the page polls
-it and shows a "new version" notice when it changes after a pull.
+keeps an old copy. /version.json reports the hash of index.html; the page polls
+it and shows a "new version" notice when its bytes change after a pull.
 """
 import argparse
+import hashlib
 import http.server
 import json
 import os
@@ -27,15 +28,17 @@ def git(*args):
     return subprocess.run(["git", "-C", REPO, *args], capture_output=True, text=True)
 
 
+def page_snapshot():
+    with open(os.path.join(HERE, "index.html"), "rb") as page:
+        body = page.read()
+    return body, hashlib.sha256(body).hexdigest()
+
+
 def current_version():
+    _, revision = page_snapshot()
     head = git("rev-parse", "--short", "HEAD").stdout.strip() or "dev"
     stamp = git("log", "-1", "--format=%cI").stdout.strip()
-    # uncommitted edits to the page count as a new version too
-    try:
-        mtime = int(os.path.getmtime(os.path.join(HERE, "index.html")))
-    except OSError:
-        mtime = 0
-    return {"version": f"{head}-{mtime}", "commit": head, "date": stamp}
+    return {"version": revision, "commit": head, "date": stamp}
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -48,7 +51,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
     def do_GET(self):
-        if self.path.split("?")[0] == "/version.json":
+        path = self.path.split("?", 1)[0]
+        if path == "/version.json":
             body = json.dumps(current_version()).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -56,7 +60,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
             return
-        if self.path.split("?")[0].endswith((".py", ".sh")):
+        if path in ("/", "/index.html"):
+            try:
+                source, revision = page_snapshot()
+            except OSError:
+                self.send_error(404)
+                return
+            body = source.replace(b"__APARTMENT_REVISION__", revision.encode(), 1)
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+        if path.endswith((".py", ".sh")):
             self.send_error(404)
             return
         super().do_GET()

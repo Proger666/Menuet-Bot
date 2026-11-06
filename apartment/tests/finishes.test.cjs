@@ -6,6 +6,8 @@ const source = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8')
 function method(name) {
   const start = source.indexOf(`function ${name}(`);
   assert(start >= 0, name);
+  const firstLine = source.slice(start, source.indexOf('\n', start));
+  if (firstLine.endsWith('}')) return firstLine;
   return source.slice(start, source.indexOf('\n}', start) + 2);
 }
 

@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
+<meta name="apartment-revision" content="__APARTMENT_REVISION__">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -288,6 +289,9 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
 .toast button { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; }
 .toast button .ico { width: 18px; height: 18px; }
 .toast button[hidden] { display: none; }
+.update-notice { position: fixed; z-index: 70; top: calc(72px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); max-width: calc(100vw - 32px); padding: 9px 10px 9px 16px; border-radius: 18px; display: flex; align-items: center; gap: 14px; box-shadow: var(--shadow); white-space: nowrap; }
+.update-notice[hidden] { display: none; }
+.update-notice button { flex: none; padding: 9px 14px; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-weight: 700; }
 
 /* first-run gestures */
 .hello {
@@ -488,6 +492,7 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
 
 <button class="orb glass demoskip" id="demoSkip" aria-label="Пропустить" hidden><svg class="ico"><use href="#i-close"/></svg></button>
 <div class="toast glass" id="toast"><span class="msg" id="toastMsg"></span><button id="toastBtn" aria-label="Отменить" hidden><svg class="ico"><use href="#i-undo"/></svg></button></div>
+<div class="update-notice glass" id="updateNotice" role="status" aria-live="polite" hidden><span>Доступна новая версия</span><button type="button" id="updateButton">Обновить</button></div>
 
 <div class="hello" id="hello">
   <div class="box glass">
@@ -513,6 +518,34 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
   </div>
 </div>
 
+<script>
+(() => {
+  const revision = document.querySelector('meta[name="apartment-revision"]').content;
+  if (!/^[0-9a-f]{64}$/.test(revision)) return;
+  const notice = document.getElementById('updateNotice');
+  let checking = false;
+  async function checkVersion() {
+    if (checking || !notice.hidden) return;
+    checking = true;
+    try {
+      const response = await fetch('/version.json', { cache: 'no-store' });
+      if (!response.ok) return;
+      const latest = await response.json();
+      if (latest.version && latest.version !== revision) notice.hidden = false;
+    } catch (_) { /* retry at the next check */ }
+    finally { checking = false; }
+  }
+  document.getElementById('updateButton').addEventListener('click', () => {
+    if (window.apartmentFlushSave) window.apartmentFlushSave();
+    location.reload();
+  });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkVersion(); });
+  window.addEventListener('pageshow', checkVersion);
+  window.addEventListener('focus', checkVersion);
+  checkVersion();
+  setInterval(checkVersion, 30000);
+})();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 'use strict';
@@ -2107,7 +2140,10 @@ function serialize() {
 }
 function pushHistory() { if (demoActive) return; history.push(JSON.stringify(serialize())); if (history.length > 80) history.shift(); $('#btnUndo').disabled = false; }
 let saveTimer = 0;
-function save() { if (demoActive) return; clearTimeout(saveTimer); saveTimer = setTimeout(() => store.set(KEY, JSON.stringify(serialize())), 300); }
+function flushSave() { if (!saveTimer) return; clearTimeout(saveTimer); saveTimer = 0; store.set(KEY, JSON.stringify(serialize())); }
+function save() { if (demoActive) return; clearTimeout(saveTimer); saveTimer = setTimeout(flushSave, 300); }
+window.apartmentFlushSave = flushSave;
+window.addEventListener('pagehide', flushSave);
 function loadState() {
   const raw = store.get(KEY);
   if (raw) {
