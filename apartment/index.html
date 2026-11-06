@@ -139,7 +139,7 @@ body.mobile .glass, body.mobile .rlabel { background: var(--glass-m); -webkit-ba
   padding: 0 var(--gutter-r) calc(env(safe-area-inset-bottom, 0px) + 12px) var(--gutter-l);
   display: flex; justify-content: center;
 }
-.tabs { pointer-events: auto; position: relative; display: grid; grid-template-columns: repeat(4, 1fr); padding: 6px; border-radius: 999px; width: min(100%, 320px); }
+.tabs { pointer-events: auto; position: relative; display: grid; grid-template-columns: repeat(5, 1fr); padding: 6px; border-radius: 999px; width: min(100%, 370px); }
 .tabpill { position: absolute; top: 6px; bottom: 6px; left: 0; width: 0; border-radius: 999px; background: var(--accent); opacity: 0; transform: scale(.6);
   transition: left .5s var(--spring), width .5s var(--spring), opacity .25s, transform .45s var(--spring); }
 .tabpill.on { opacity: 1; transform: none; }
@@ -276,6 +276,59 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
 @keyframes ghostIn { from { transform: rotate(-45deg) scale(.3); opacity: 0; } }
 .sheet.open.peek { transform: translateY(calc(100% - 70px)) scale(.97); opacity: .5; transition: transform .45s var(--ease), opacity .3s; }
 .selbar.show.peek { transform: translate(-50%, 40px) scale(.95); opacity: .45; }
+/* room focus */
+.rlabel { pointer-events: auto; cursor: pointer; padding: 6px 11px; font-size: 11px; }
+.rlabel:active { transform: scale(.94); }
+body.focus .rlabel { pointer-events: none; }
+.focusbar {
+  position: fixed; z-index: 24; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 66px);
+  display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 14px; border-radius: 999px;
+  transform: translate(-50%, -16px) scale(.9); opacity: 0; visibility: hidden; pointer-events: none;
+  transition: transform .5s var(--spring), opacity .25s, visibility 0s .5s, top .4s var(--ease);
+}
+body.focus .focusbar { transform: translate(-50%, 0); opacity: 1; visibility: visible; pointer-events: auto; transition: transform .5s var(--spring), opacity .25s, visibility 0s, top .4s var(--ease); }
+.focusbar > .ico { width: 18px; height: 18px; color: var(--accent); }
+.focusbar .fname { font-weight: 700; font-size: 14px; white-space: nowrap; }
+.fprice { padding: 7px 11px; border-radius: 999px; background: var(--chip); font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; transition: transform .25s var(--spring); }
+.fprice:active { transform: scale(.92); }
+.fexit { width: 40px; height: 40px; background: var(--accent); color: var(--accent-ink); }
+body.focus .toast { top: calc(env(safe-area-inset-top, 0px) + 120px); }
+/* prices */
+.card .price { position: absolute; right: 6px; bottom: 6px; z-index: 1; padding: 2px 7px; border-radius: 999px; background: var(--glass-m, var(--glass)); color: var(--ink); font: 700 10.5px/1.4 var(--font-ui); font-variant-numeric: tabular-nums; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+.selthumb .sprice { position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); padding: 1px 6px; border-radius: 999px; background: var(--ink); color: var(--glass-solid); font: 700 9.5px/1.4 var(--font-ui); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.selthumb .sprice:empty { display: none; }
+#estTier button { font-weight: 800; font-size: 12.5px; letter-spacing: 0; }
+.estctl { gap: 6px; }
+.estctl .iseg { padding: 3px; gap: 1px; }
+.estctl .iseg button { min-width: 34px; height: 38px; }
+.estctl .iseg button .ico { width: 20px; height: 20px; }
+.est-hero { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 2px 0 0; }
+.est-scope { font-size: 12px; font-weight: 700; color: var(--ink-2); letter-spacing: .03em; }
+.est-total { font: 800 30px/1.1 var(--font-ui); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.est-range { font-size: 12px; font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; min-height: 1.3em; }
+.est-viz { display: grid; grid-template-columns: 108px 1fr; gap: 12px; align-items: center; }
+.donut { width: 108px; height: 108px; max-width: 100%; }
+.donut circle { fill: none; stroke-width: 15; transition: stroke-dasharray .7s var(--spring), stroke-dashoffset .7s var(--spring), opacity .3s; }
+.donut .ctr { fill: var(--ink-2); }
+.est-legend { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.cchip { display: inline-flex; align-items: center; gap: 5px; padding: 5px 9px 5px 6px; border-radius: 999px; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); transition: transform .25s var(--spring), box-shadow .2s; }
+.cchip .ico { width: 16px; height: 16px; }
+.cchip.on { box-shadow: inset 0 0 0 2px currentColor; }
+.cchip:active { transform: scale(.92); }
+.est-lines { display: flex; flex-direction: column; gap: 2px; }
+.est-lines:empty { display: none; }
+.eline { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 7px 10px; border-radius: 12px; background: var(--chip); font-size: 12.5px; animation: panelIn .35s var(--ease) both; }
+.eline b { font-weight: 600; min-width: 0; }
+.eline span { color: var(--ink-3); font-size: 11.5px; grid-column: 1; font-variant-numeric: tabular-nums; }
+.eline em { font-style: normal; font-weight: 700; grid-row: 1 / span 2; grid-column: 2; align-self: center; font-variant-numeric: tabular-nums; }
+.est-rooms { display: flex; flex-direction: column; gap: 6px; }
+.est-rooms:empty { display: none; }
+.rbar { display: grid; grid-template-columns: 92px 1fr auto; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; text-align: left; }
+.rbar i { display: block; height: 12px; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); transition: width .6s var(--spring); min-width: 4px; }
+.rbar em { font-style: normal; font-weight: 700; font-variant-numeric: tabular-nums; }
+.est-note { margin: 0; font-size: 11px; color: var(--ink-3); text-align: center; text-wrap: balance; }
+.minimap .room.focus rect { stroke: var(--accent); stroke-width: .16; }
+.minimap.focused .room:not(.focus) { opacity: .35; }
 .toast {
   position: fixed; z-index: 40; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 68px);
   transform: translate(-50%, -14px) scale(.92); opacity: 0; pointer-events: none; transition: transform .45s var(--spring), opacity .25s;
@@ -321,6 +374,7 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
 
 .loading { position: fixed; inset: 0; display: grid; place-items: center; z-index: 50; background: var(--sky-bottom); transition: opacity .7s, visibility 0s .7s; }
 .loading.done { opacity: 0; visibility: hidden; }
+.loading.done * { animation: none !important; }
 .ld { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 0 28px; max-width: 360px; text-align: center; }
 .ldlogo { position: relative; width: 120px; height: 120px; display: grid; place-items: center; color: var(--accent); margin-bottom: 8px; }
 .ldlogo > svg:first-child { width: 58px; height: 58px; }
@@ -386,6 +440,12 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
     <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol>
     <symbol id="i-hand" viewBox="0 0 24 24"><path d="M9 11V5a1.5 1.5 0 0 1 3 0v5M12 9.5a1.5 1.5 0 0 1 3 0V11M15 10.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-.5a6 6 0 0 1-5-2.7L4 15a1.5 1.5 0 0 1 2.4-1.8L9 15"/></symbol>
     <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 7v6M12 17v.5"/></symbol>
+    <symbol id="i-rub" viewBox="0 0 24 24"><path d="M8 21V3h6a4.5 4.5 0 0 1 0 9H5M5 16.5h9"/></symbol>
+    <symbol id="i-ceil" viewBox="0 0 24 24"><path d="M3 4h18M12 4v4M7.5 14a4.5 4.5 0 0 1 9 0Z"/><path d="M10 18l-.8 2M14 18l.8 2M12 18v2.5"/></symbol>
+    <symbol id="i-tools" viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 0 5 5L11 20a2.1 2.1 0 0 1-3-3l8.5-8.5a4 4 0 0 0-2-2Z"/><path d="M4 4l5 5M3 7l4-4"/></symbol>
+    <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0V8ZM12 17v4"/></symbol>
+    <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z"/></symbol>
+    <symbol id="i-new" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/></symbol>
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
   </defs>
 </svg>
@@ -436,6 +496,35 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
       <div class="tiles" id="floorMats"></div>
       <p class="finish-name" id="floorChoice"></p>
     </section>
+    <section class="panel" data-panel="estimate">
+      <div class="row estctl">
+        <div class="iseg" id="estScope">
+          <button data-v="room" class="on" aria-label="Комната" title="Комната"><svg class="ico"><use href="#i-room"/></svg></button>
+          <button data-v="flat" aria-label="Вся квартира" title="Вся квартира"><svg class="ico"><use href="#i-fit"/></svg></button>
+        </div>
+        <div class="iseg" id="estMode">
+          <button data-v="delta" class="on" aria-label="Только изменения" title="Только изменения"><svg class="ico"><use href="#i-new"/></svg></button>
+          <button data-v="full" aria-label="Ремонт с нуля" title="Ремонт с нуля"><svg class="ico"><use href="#i-tools"/></svg></button>
+        </div>
+        <div class="iseg grow" id="estTier">
+          <button data-v="low" aria-label="Эконом" title="Эконом">₽</button>
+          <button data-v="mid" class="on" aria-label="Средний" title="Средний">₽₽</button>
+          <button data-v="high" aria-label="Премиум" title="Премиум">₽₽₽</button>
+        </div>
+      </div>
+      <div class="est-hero">
+        <span class="est-scope" id="estScopeName">Кухня</span>
+        <span class="est-total" id="estTotal">0 ₽</span>
+        <span class="est-range" id="estRange"></span>
+      </div>
+      <div class="est-viz">
+        <svg class="donut" id="estDonut" viewBox="0 0 120 120" aria-hidden="true"></svg>
+        <div class="est-legend" id="estLegend"></div>
+      </div>
+      <div class="est-lines" id="estLines"></div>
+      <div class="est-rooms" id="estRooms"></div>
+      <p class="est-note" id="estNote"></p>
+    </section>
     <section class="panel" data-panel="view">
       <svg class="minimap" id="minimap" aria-label="План квартиры"></svg>
       <div class="row">
@@ -466,7 +555,7 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
 
 <div class="selbar glass" id="selbar">
   <div class="top">
-    <div class="selthumb"><img id="selThumb" alt=""><span class="badge"><svg class="ico"><use href="#i-warn"/></svg></span></div>
+    <div class="selthumb"><img id="selThumb" alt=""><span class="sprice" id="selPrice"></span><span class="badge"><svg class="ico"><use href="#i-warn"/></svg></span></div>
     <button class="act" id="sRotL" aria-label="Повернуть влево"><svg class="ico"><use href="#i-rotl"/></svg></button>
     <button class="act" id="sRotR" aria-label="Повернуть вправо"><svg class="ico"><use href="#i-rotr"/></svg></button>
     <button class="act" id="sColor" aria-label="Цвет"><svg class="ico"><use href="#i-palette"/></svg></button>
@@ -486,11 +575,18 @@ input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border: 0; bord
     <button class="tab" data-tab="furniture" role="tab" aria-label="Мебель"><svg class="ico"><use href="#i-sofa"/></svg></button>
     <button class="tab" data-tab="walls" role="tab" aria-label="Стены"><svg class="ico"><use href="#i-roller"/></svg></button>
     <button class="tab" data-tab="floor" role="tab" aria-label="Пол"><svg class="ico"><use href="#i-floor"/></svg></button>
+    <button class="tab" data-tab="estimate" role="tab" aria-label="Смета"><svg class="ico"><use href="#i-rub"/></svg></button>
     <button class="tab" data-tab="view" role="tab" aria-label="Вид"><svg class="ico"><use href="#i-eye"/></svg></button>
   </div>
 </nav>
 
 <button class="orb glass demoskip" id="demoSkip" aria-label="Пропустить" hidden><svg class="ico"><use href="#i-close"/></svg></button>
+<div class="focusbar glass" id="focusbar" aria-live="polite">
+  <svg class="ico"><use href="#i-room"/></svg>
+  <span class="fname" id="focusName">Кухня</span>
+  <button class="fprice" id="focusPrice" aria-label="Смета комнаты">0 ₽</button>
+  <button class="orb fexit" id="focusExit" aria-label="Вернуться ко всей квартире" title="Вся квартира"><svg class="ico"><use href="#i-fit"/></svg></button>
+</div>
 <div class="toast glass" id="toast"><span class="msg" id="toastMsg"></span><button id="toastBtn" aria-label="Отменить" hidden><svg class="ico"><use href="#i-undo"/></svg></button></div>
 <div class="update-notice glass" id="updateNotice" role="status" aria-live="polite" hidden><span>Доступна новая версия</span><button type="button" id="updateButton">Обновить</button></div>
 
@@ -1152,7 +1248,7 @@ function buildPlan() {
     m.castShadow = !mats.transparent; m.receiveShadow = true;
     m.userData = { seg, side };
     wallGroup.add(m);
-    seg.pieces.push({ mesh: m, y0, y1, dy });
+    seg.pieces.push({ mesh: m, y0, y1, dy, side, len: seg.o === 'h' ? w : d });
     if (side !== undefined) wallMeshes.push(m);
     if (y0 === 0 && side !== undefined) wallRects.push({ x0: rect.x0, x1: rect.x1, z0: rect.z0, z1: rect.z1, top: y1 });
   };
@@ -1388,6 +1484,15 @@ function cushionSofa(g, d, A, Bm, n, x0, x1, dp, R) {
 }
 
 /* ------------------------------------------------------------------ furniture catalog */
+const PRICES = /*@prices*/{"currency":"RUB","city":"Москва","asOf":"ноябрь 2026","furniture":{"sofa":{"low":33000,"mid":49000,"high":73000},"cornerSofa":{"low":49500,"mid":80000,"high":125600},"armchair":{"low":15000,"mid":27000,"high":42700},"coffeeTable":{"low":2400,"mid":5100,"high":13100},"tvStand":{"low":25800,"mid":40000,"high":55000},"tv":{"low":30000,"mid":50000,"high":85000},"rug":{"low":6000,"mid":14000,"high":32000},"rugLarge":{"low":12000,"mid":28000,"high":65000},"stBooks":{"low":6000,"mid":12000,"high":22000},"stGlass":{"low":7000,"mid":14000,"high":26000},"stClosed":{"low":7000,"mid":14000,"high":26000},"stTV":{"low":12000,"mid":24000,"high":45000},"stCorner":{"low":15000,"mid":30000,"high":55000},"bookshelf":{"low":5000,"mid":18000,"high":28000},"hallUnit":{"low":16000,"mid":26000,"high":35800},"shoeRack":{"low":9000,"mid":13000,"high":19000},"doubleBed":{"low":28000,"mid":46000,"high":62800},"singleBed":{"low":15000,"mid":30000,"high":60000},"wardrobe":{"low":25500,"mid":43500,"high":81000},"nightstand":{"low":6900,"mid":9000,"high":11600},"dresser":{"low":8300,"mid":21300,"high":30200},"desk":{"low":16000,"mid":21000,"high":23000},"pcDesk":{"low":8600,"mid":13600,"high":19800},"officeChair":{"low":9600,"mid":16000,"high":28800},"computer":{"low":15000,"mid":28000,"high":55000},"pcTower":{"low":60000,"mid":100000,"high":180000},"kBase":{"low":6000,"mid":12000,"high":24000},"kSink":{"low":10000,"mid":18000,"high":35000},"kStove":{"low":25000,"mid":45000,"high":90000},"kFridge":{"low":35000,"mid":70000,"high":150000},"kUpper":{"low":4000,"mid":8000,"high":16000},"kHood":{"low":8000,"mid":18000,"high":40000},"microwave":{"low":6000,"mid":10000,"high":20000},"diningTable":{"low":12000,"mid":16800,"high":23500},"chair":{"low":5000,"mid":12000,"high":21000},"roundTable":{"low":4000,"mid":10000,"high":25000},"bathtub":{"low":15000,"mid":30000,"high":60000},"toilet":{"low":8000,"mid":18000,"high":40000},"bathSink":{"low":10000,"mid":22000,"high":50000},"washer":{"low":25000,"mid":40000,"high":75000},"showerCabin":{"low":18000,"mid":35000,"high":75000},"bathCabinet":{"low":4000,"mid":9000,"high":20000},"radiator":{"low":15000,"mid":25000,"high":50000},"curtains":{"low":3000,"mid":7000,"high":20000},"curtainsWide":{"low":5000,"mid":12000,"high":30000},"plant":{"low":1500,"mid":4000,"high":12000},"smallPlant":{"low":300,"mid":800,"high":2500},"floorLamp":{"low":2500,"mid":6000,"high":18000},"tableLamp":{"low":1500,"mid":3500,"high":9000},"chandelier":{"low":4000,"mid":12000,"high":35000},"plafond":{"low":1500,"mid":3500,"high":9000},"pendant":{"low":2500,"mid":6000,"high":18000},"sconce":{"low":1500,"mid":3500,"high":10000},"candles":{"low":300,"mid":800,"high":2500},"picture":{"low":1000,"mid":3500,"high":12000},"mirrorWall":{"low":2000,"mid":5000,"high":15000},"vase":{"low":500,"mid":1500,"high":6000},"wickerChair":{"low":6000,"mid":14000,"high":30000},"runner":{"low":2500,"mid":5000,"high":12000}},"floors":{"herring":{"material":{"low":3500,"mid":6500,"high":12000},"labor":{"low":1200,"mid":1800,"high":2800},"unit":"м²"},"oak":{"material":{"low":900,"mid":1800,"high":3500},"labor":{"low":350,"mid":500,"high":800},"unit":"м²"},"ash":{"material":{"low":3000,"mid":5000,"high":8000},"labor":{"low":500,"mid":650,"high":900},"unit":"м²"},"walnut":{"material":{"low":4500,"mid":7500,"high":12000},"labor":{"low":500,"mid":700,"high":1000},"unit":"м²"},"greyoak":{"material":{"low":4000,"mid":7000,"high":11000},"labor":{"low":1300,"mid":2000,"high":3000},"unit":"м²"},"tileBeige":{"material":{"low":900,"mid":1800,"high":3500},"labor":{"low":800,"mid":1200,"high":1800},"unit":"м²"},"tileWhite":{"material":{"low":800,"mid":1500,"high":3000},"labor":{"low":900,"mid":1300,"high":1900},"unit":"м²"},"marble":{"material":{"low":1200,"mid":2200,"high":4500},"labor":{"low":900,"mid":1300,"high":1900},"unit":"м²"},"terrazzo":{"material":{"low":1500,"mid":2800,"high":5500},"labor":{"low":900,"mid":1300,"high":1900},"unit":"м²"},"checker":{"material":{"low":1200,"mid":2200,"high":4000},"labor":{"low":1000,"mid":1400,"high":2000},"unit":"м²"},"concrete":{"material":{"low":2500,"mid":4000,"high":7000},"labor":{"low":3000,"mid":4500,"high":7000},"unit":"м²"},"carpet":{"material":{"low":600,"mid":1200,"high":2500},"labor":{"low":200,"mid":300,"high":450},"unit":"м²"},"deck":{"material":{"low":2500,"mid":4500,"high":8000},"labor":{"low":900,"mid":1400,"high":2200},"unit":"м²"}},"walls":{"paint":{"material":{"low":130,"mid":240,"high":360},"labor":{"low":300,"mid":450,"high":650},"unit":"м²"},"plaster":{"material":{"low":500,"mid":900,"high":1800},"labor":{"low":800,"mid":1300,"high":2000},"unit":"м²"},"tile":{"material":{"low":600,"mid":1100,"high":2200},"labor":{"low":700,"mid":1000,"high":1500},"unit":"м²"},"brick":{"material":{"low":800,"mid":1600,"high":3000},"labor":{"low":600,"mid":900,"high":1400},"unit":"м²"},"wallpaper":{"material":{"low":60,"mid":180,"high":260},"labor":{"low":150,"mid":250,"high":400},"unit":"м²"},"slats":{"material":{"low":1200,"mid":2500,"high":4500},"labor":{"low":900,"mid":1400,"high":2200},"unit":"м²"},"concrete":{"material":{"low":1500,"mid":2800,"high":5000},"labor":{"low":1500,"mid":2400,"high":3800},"unit":"м²"}},"labor":{"wallPrep":{"low":350,"mid":550,"high":800,"unit":"м²"},"floorScreed":{"low":500,"mid":800,"high":1200,"unit":"м²"},"demolition":{"low":250,"mid":400,"high":650,"unit":"м²"},"ceiling":{"low":800,"mid":1100,"high":1600,"unit":"м²"},"electricPoint":{"low":1200,"mid":2000,"high":3200,"unit":"точка"},"lightInstall":{"low":500,"mid":900,"high":1800,"unit":"шт"},"plumbingPoint":{"low":2500,"mid":4000,"high":6500,"unit":"точка"},"doorInstall":{"low":4000,"mid":6000,"high":9000,"unit":"шт"},"furnitureAssembly":{"low":5,"mid":8,"high":12,"unit":"%"},"delivery":{"low":1500,"mid":3000,"high":6000,"unit":"заказ"}}}/*@/prices*/;
+const P = (o, tier) => (o && typeof o[tier] === 'number' ? o[tier] : 0);
+const fmtRub = (v) => new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(Math.round(v / 100) * 100) + ' ₽';
+function fmtShort(v) {
+  if (!v) return '0 ₽';
+  if (v < 1e3) return Math.round(v) + ' ₽';
+  if (v < 1e6) return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: v < 1e4 ? 1 : 0 }).format(v / 1e3) + ' тыс ₽';
+  return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(v / 1e6) + ' млн ₽';
+}
 const DEFS = {};
 const CATS = [
   { id: 'living', name: 'Гостиная' }, { id: 'wall', name: 'Стенки и хранение' }, { id: 'bedroom', name: 'Спальня' },
@@ -2013,6 +2118,7 @@ function createItem(data, anim) {
     it.lampOff = (hashStr(it.uid) % 100) / 100 * .08;
     lampUpdate(it); lightsDirty = true;
   }
+  if (focus && itemRoom(it) !== focus.room) { it.fHidden = true; it.obj.visible = false; }
   scene.add(it.obj); items.push(it);
   refreshPickables();
   syncObj(it);
@@ -2023,7 +2129,7 @@ function createItem(data, anim) {
   }
   return it;
 }
-function refreshPickables() { pickables = []; for (const it of items) if (!it.dying) it.inner.traverse((o) => { if (o.isMesh) pickables.push(o); }); }
+function refreshPickables() { pickables = []; for (const it of items) if (!it.dying && !it.fHidden) it.inner.traverse((o) => { if (o.isMesh) pickables.push(o); }); }
 function disposeItem(it) {
   scene.remove(it.obj);
   if (it.blob) blobs.splice(blobs.indexOf(it.blob), 1);
@@ -2141,7 +2247,7 @@ function serialize() {
 function pushHistory() { if (demoActive) return; history.push(JSON.stringify(serialize())); if (history.length > 80) history.shift(); $('#btnUndo').disabled = false; }
 let saveTimer = 0;
 function flushSave() { if (!saveTimer) return; clearTimeout(saveTimer); saveTimer = 0; store.set(KEY, JSON.stringify(serialize())); }
-function save() { if (demoActive) return; clearTimeout(saveTimer); saveTimer = setTimeout(flushSave, 300); }
+function save() { if (demoActive) return; clearTimeout(saveTimer); saveTimer = setTimeout(flushSave, 300); estChanged(); }
 window.apartmentFlushSave = flushSave;
 window.addEventListener('pagehide', flushSave);
 function loadState() {
@@ -2249,6 +2355,7 @@ function applySnapshot(s, anim) {
   state.rooms = s.rooms; state.walls = s.walls || {};
   applyWalls(anim); applyFloors(anim ? '*' : null);
   applyItems(s.items, anim);
+  applyFocusVisibility(false);
   if (selected && !items.includes(selected)) deselect();
   if (selected) updateSelbar();
   save();
@@ -2297,8 +2404,15 @@ function groundAt(x, y, c = want, h = 0) {
   return ray.ray.intersectPlane(groundPlane, p) ? p : null;
 }
 function clampWant() {
-  want.dist = clamp(want.dist, 2.5, 60);
   want.pitch = clamp(want.pitch, .38, 1.553);
+  if (focus) {
+    const r = ROOM[focus.room];
+    want.dist = clamp(want.dist, 2.5, focus.maxDist);
+    want.tx = clamp(want.tx, r.x1 - 1.2, r.x2 + 1.2);
+    want.tz = clamp(want.tz, r.z1 - 1.2, r.z2 + 1.2);
+    return;
+  }
+  want.dist = clamp(want.dist, 2.5, 60);
   want.tx = clamp(want.tx, BOUNDS.x0 - 3, BOUNDS.x1 + 3);
   want.tz = clamp(want.tz, BOUNDS.z0 - 3, BOUNDS.z1 + 3);
 }
@@ -2339,6 +2453,8 @@ function wallTargets() {
   const vx = -Math.sin(cam.yaw), vz = -Math.cos(cam.yaw);
   const top = cam.pitch > 1.32;
   for (const seg of segs) {
+    // in room focus every wall that does not bound the room goes down
+    if (focus && seg.sides[1] !== focus.room && seg.sides[-1] !== focus.room) { seg.target = Math.min(LOW, seg.full); continue; }
     let t = seg.full;
     if (wallMode === 'down') t = LOW;
     else if (wallMode === 'cut' && !top) {
@@ -2371,15 +2487,16 @@ function updateWalls(dt) {
 /* ------------------------------------------------------------------ labels */
 const labelsEl = $('#labels');
 const labels = ROOMS.map((r) => {
-  const el = document.createElement('div'); el.className = 'rlabel';
-  el.textContent = r.name;
+  const el = document.createElement('button'); el.className = 'rlabel';
+  el.textContent = r.name; el.setAttribute('aria-label', 'Работать с комнатой: ' + r.name);
+  el.addEventListener('click', () => enterFocus(r.id));
   labelsEl.appendChild(el);
   return { r, el, v: new T.Vector3(r.cx, .05, r.cz) };
 });
-const settings = { labels: true, snap: true, shadows: true, refl: true };
+const settings = { labels: true, snap: true, shadows: true, refl: true, tier: 'mid', estMode: 'delta' };
 function updateLabels() {
   const w = canvas.clientWidth, h = canvas.clientHeight;
-  const show = settings.labels && !drag;
+  const show = settings.labels && !drag && !focus;
   for (const L of labels) {
     const p = L.v.clone().project(camera);
     const vis = show && p.z < 1 && Math.abs(p.x) < 1.1 && Math.abs(p.y) < 1.1;
@@ -2425,6 +2542,8 @@ function updateSelbar() {
   const img = $('#selThumb'), type = selected.type;
   if (img.dataset.type !== type) { img.dataset.type = type; img.removeAttribute('src'); requestThumb(type, (url) => { if (img.dataset.type === type) img.src = url; }); }
   img.alt = d.name;
+  const pr = P(PRICES.furniture[type], settings.tier);
+  $('#selPrice').textContent = pr ? fmtShort(pr) : '';
   $('#selbar').classList.toggle('warn', collides(selected));
   const lb = $('#sLight'); lb.hidden = !d.light;
   if (d.light) { const on = lampIsOn(selected); lb.classList.toggle('on', on); $('#sLightUse').setAttribute('href', on ? '#i-bulb' : '#i-bulb-off'); }
@@ -2463,7 +2582,7 @@ function addItem(type) {
   pushHistory();
   const r = canvas.getBoundingClientRect();
   let p = groundAt(r.left + r.width / 2, r.top + r.height * .45) || new T.Vector3(cam.tx, 0, cam.tz);
-  if (!roomAt(p.x, p.z)) { const near = ROOMS.slice().sort((a, b) => Math.hypot(a.cx - p.x, a.cz - p.z) - Math.hypot(b.cx - p.x, b.cz - p.z))[0]; p = new T.Vector3(near.cx, 0, near.cz); }
+  if (focus ? roomAt(p.x, p.z) !== focus.room : !roomAt(p.x, p.z)) { const near = focus ? ROOM[focus.room] : nearestRoom(p.x, p.z); p = new T.Vector3(near.cx, 0, near.cz); }
   const it = createItem({ uid: newUid(), type, x: p.x, z: p.z, r: 0, y: d.elev || 0 }, true);
   if (d.small) { it.y = it.vy = supportY(it, it.x, it.z); }
   closeSheet();
@@ -2491,6 +2610,7 @@ function dragMove(x, y) {
   const g = groundAt(x, y, want, drag.plane);
   if (!g) return;
   let nx = clamp(g.x + drag.ox, BOUNDS.x0, BOUNDS.x1), nz = clamp(g.z + drag.oz, BOUNDS.z0, BOUNDS.z1);
+  if (focus) { const r = ROOM[focus.room]; nx = clamp(nx, r.x1 + .05, r.x2 - .05); nz = clamp(nz, r.z1 + .05, r.z2 - .05); }
   [nx, nz] = snapMagnet(it, nx, nz);
   it.x = nx; it.z = nz;
   it.y = supportY(it, nx, nz);
@@ -2556,7 +2676,7 @@ function updateItems(dt) {
       const t = hide ? 0 : 1;
       if (it.wv === undefined) it.wv = t;
       if (Math.abs(t - it.wv) > .002) { it.wv += (t - it.wv) * (1 - Math.exp(-dt * 9)); moving = true; } else it.wv = t;
-      it.obj.scale.y = Math.max(.001, it.wv); it.obj.visible = it.wv > .02;
+      it.obj.scale.y = Math.max(.001, it.wv); it.obj.visible = it.wv > .02 && !it.fHidden;
     }
   }
   if (selected) {
@@ -2722,6 +2842,7 @@ function paintWallAt(x, y) {
   if (!h) return;
   if (h.object.userData.room && !h.object.userData.seg) {
     const room = h.object.userData.room;
+    if (focus && room !== focus.room) return;
     if (state.rooms[room].floorColor === paint.color) return;
     pushHistory(); state.rooms[room].floorColor = paint.color; paint.floorTool = 'color';
     applyFloors(room, h.point); save(); pulseAt(x, y);
@@ -2738,6 +2859,7 @@ function paintWallAt(x, y) {
   const { seg, side } = h.object.userData;
   const key = seg.key + '|' + side;
   const room = wallMats[key].room;
+  if (focus && room !== focus.room) return;
   pushHistory();
   if (paint.scope === 'room') {
     state.rooms[room].wall = paint.color; state.rooms[room].finish = paint.finish;
@@ -2752,7 +2874,7 @@ function paintWallAt(x, y) {
 }
 function paintFloorAt(x, y) {
   const h = pick(x, y, floorMeshes);
-  if (!h) return;
+  if (!h || (focus && h.object.userData.room !== focus.room)) return;
   setFloor(h.object.userData.room, x, y, h.point);
 }
 function setFloor(room, x, y, point) {
@@ -2779,7 +2901,7 @@ const WALL_COLORS = ['#f4f1ea', '#e9e2d6', '#e4dbcf', '#d9cbb7', '#c8b49a', '#e6
 const FURN_COLORS = ['#f3f1ec', '#ede8df', '#e3d6c2', '#c9a77c', '#a57c55', '#7b5a43', '#4a3528', '#2b2c2e', '#8e8b86', '#cfc6b8', '#8e9aa6', '#5f7a8c',
   '#3e5566', '#a8b8ad', '#7d8b6a', '#4b7a44', '#a7735a', '#c46b4b', '#c9a64a', '#b68c9a', '#e9e4da', '#4fd1c5'];
 const CAT_ICONS = { living: 'i-sofa', wall: 'i-shelf', bedroom: 'i-bed', work: 'i-pc', kitchen: 'i-pot', bath: 'i-bath', light: 'i-bulb', decor: 'i-plant' };
-const TAB_ORDER = ['furniture', 'walls', 'floor', 'view'];
+const TAB_ORDER = ['furniture', 'walls', 'floor', 'estimate', 'view'];
 const paint = { color: '#c4ceb6', finish: 'paint', floor: 'herring', floorTool: 'material', scope: 'room' };
 let activeTab = null, sheetOpen = false;
 let paintArmed = false;
@@ -2875,7 +2997,8 @@ function renderCatalog() {
   Object.values(DEFS).filter((d) => d.cat === catActive).forEach((d, i) => {
     const b = document.createElement('button'); b.className = 'card'; b.style.setProperty('--i', i);
     b.setAttribute('aria-label', d.name); b.title = d.name;
-    b.innerHTML = '<img alt="">';
+    const pr = P(PRICES.furniture[d.id], settings.tier);
+    b.innerHTML = `<img alt=""><span class="price">${pr ? fmtShort(pr) : '—'}</span>`;
     b.addEventListener('click', () => addItem(d.id));
     grid.appendChild(b);
     const img = b.querySelector('img');
@@ -2890,12 +3013,13 @@ let mmCam = null;
 function renderMinimap() {
   const svg = $('#minimap');
   svg.innerHTML = '';
+  svg.classList.toggle('focused', !!focus);
   const pad = .5;
   svg.setAttribute('viewBox', `${BOUNDS.x0 - pad} ${BOUNDS.z0 - pad} ${BOUNDS.x1 - BOUNDS.x0 + 2 * pad} ${BOUNDS.z1 - BOUNDS.z0 + 2 * pad}`);
   for (const r of ROOMS) {
-    const grp = svgEl('g', { class: 'room', fill: state.rooms[r.id].wall, 'stroke-opacity': 0 }, svg);
+    const grp = svgEl('g', { class: 'room' + (focus && focus.room === r.id ? ' focus' : ''), fill: state.rooms[r.id].wall, 'stroke-opacity': 0 }, svg);
     for (const [x1, x2, z1, z2] of r.rects) svgEl('rect', { x: x1, y: z1, width: x2 - x1, height: z2 - z1 }, grp);
-    grp.addEventListener('click', () => { focusRoom(r.id); grp.animate([{ opacity: .5 }, { opacity: 1 }], { duration: 500 }); });
+    grp.addEventListener('click', () => { enterFocus(r.id); grp.animate([{ opacity: .5 }, { opacity: 1 }], { duration: 500 }); });
     svgEl('title', {}, grp).textContent = r.name;
   }
   for (const sg of segs) {
@@ -2985,6 +3109,7 @@ function openTab(tab) {
   if (tab === 'furniture') renderCatalog();
   if (tab === 'walls') renderWallsPanel();
   if (tab === 'floor') renderFloorPanel();
+  if (tab === 'estimate') renderEstimate();
   if (tab === 'view') { renderMinimap(); requestAnimationFrame(() => { segPill($('#wallMode')); }); }
   $('#sheet').classList.add('open');
   if (h0) {
@@ -3041,7 +3166,7 @@ $('#btnTop').addEventListener('click', () => {
 });
 $('#rotL').addEventListener('click', () => flyTo({ yaw: want.yaw - PI / 4 }, 650));
 $('#rotR').addEventListener('click', () => flyTo({ yaw: want.yaw + PI / 4 }, 650));
-$('#fitAll').addEventListener('click', fitAll);
+$('#fitAll').addEventListener('click', () => { if (focus) exitFocus(); else fitAll(); });
 const tiltEl = $('#tilt');
 function syncTilt() { tiltEl.value = Math.round(want.pitch * 180 / PI); }
 tiltEl.addEventListener('input', () => { want.pitch = +tiltEl.value * PI / 180; clampWant(); invalidate(); });
@@ -3054,6 +3179,7 @@ bindToggle('#tgSnap', 'snap');
 bindToggle('#tgRefl', 'refl');
 bindToggle('#tgShadows', 'shadows', () => { renderer.shadowMap.enabled = settings.shadows; shadowDirty = true; scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => { m.needsUpdate = true; }); }); });
 $('#btnReset').addEventListener('click', () => {
+  if (focus) exitFocus(false);
   pushHistory();
   applySnapshot(defaultState(), true);
   closeSheet(); fitAll();
@@ -3128,6 +3254,7 @@ function movePaintDrag(x, y) {
   if (p.kind === 'floor') { h = pick(x, y, floorMeshes); if (h) hit = { type: 'floor', room: h.object.userData.room }; }
   else if (p.kind === 'finish') { h = pick(x, y, wallMeshes); if (h) hit = wallHit(h); }
   else { h = pick(x, y, pickables.concat(wallMeshes, p.kind === 'color' ? floorMeshes : [])); if (h) hit = h.object.userData.item ? { type: 'item', item: h.object.userData.item } : h.object.userData.seg ? wallHit(h) : { type: 'floor', room: h.object.userData.room }; }
+  if (hit && focus && hit.type !== 'item' && hit.room !== focus.room) hit = null;
   const id = !hit ? null : hit.type === 'floor' ? 'f:' + hit.room : hit.type === 'item' ? 'i:' + hit.item.uid : (paint.scope === 'room' ? 'r:' + hit.room : 'w:' + hit.key);
   pdrag.point = h ? h.point.clone() : null;
   pdrag.ghost.classList.toggle('hit', !!hit);
@@ -3273,7 +3400,7 @@ function assignLights() {
   const cands = [];
   let total = 0, lit = 0;
   for (const it of items) {
-    if (!it.def.light || it.dying) continue;
+    if (!it.def.light || it.dying || it.fHidden) continue;
     total += it.def.light.i;
     if (it.want < .03) continue;
     lit += it.want;
@@ -3488,6 +3615,284 @@ function renderReflection() {
   ring.visible = ringVis;
 }
 
+/* ------------------------------------------------------------------ room focus: work on one room, then go back to the whole flat */
+let focus = null;
+const FOCUS_VIEW = { hall: { yaw: 0, pitch: 1.05 }, living: { yaw: -HP, pitch: .85 }, bed1: { yaw: -HP, pitch: .85 }, kitchen: { yaw: -HP, pitch: .85 },
+  bath: { yaw: 0, pitch: .95 }, bed2: { yaw: HP, pitch: .85 }, balcony: { yaw: -HP, pitch: .9 } };
+const ROOM_CAT = { kitchen: 'kitchen', bath: 'bath', bed1: 'bedroom', bed2: 'bedroom', living: 'living', hall: 'wall', balcony: 'decor' };
+function nearestRoom(x, z) { return ROOMS.slice().sort((a, b) => Math.hypot(a.cx - x, a.cz - z) - Math.hypot(b.cx - x, b.cz - z))[0]; }
+function itemRoom(it) { return roomAt(it.x, it.z) || nearestRoom(it.x, it.z).id; }
+function roomFitDistance(r, yaw, pitch) {
+  const c = Math.abs(Math.cos(yaw)), sn = Math.abs(Math.sin(yaw));
+  const w = (r.x2 - r.x1) * c + (r.z2 - r.z1) * sn, d = (r.x2 - r.x1) * sn + (r.z2 - r.z1) * c;
+  const vf = Math.tan(camera.fov * PI / 360);
+  return clamp(Math.max((w / 2 + .9) / (vf * camera.aspect), (d * Math.sin(pitch) / 2 + 1.8) / vf) * 1.05, 3.5, 22);
+}
+function setFocusHidden(it, hide, anim, delay = 0) {
+  if (!!it.fHidden === hide) return;
+  it.fHidden = hide;
+  if (!anim) { it.obj.visible = !hide; it.inner.scale.setScalar(1); return; }
+  const go = () => {
+    if (it.fHidden !== hide || it.dying) return;
+    if (hide) tween(260, (k) => it.inner.scale.setScalar(Math.max(.001, 1 - EASE.inBack(k))), (t) => t, () => { if (it.fHidden) it.obj.visible = false; it.inner.scale.setScalar(1); });
+    else { it.obj.visible = !(it.def.wall && it.wv !== undefined && it.wv <= .02); it.inner.scale.setScalar(.01); tween(420, (k) => it.inner.scale.setScalar(Math.max(.01, EASE.back(k))), (t) => t); }
+  };
+  if (delay) setTimeout(go, delay); else go();
+}
+function applyFocusVisibility(anim, origin) {
+  for (const it of items) {
+    const hide = !!focus && itemRoom(it) !== focus.room;
+    const d = origin ? Math.hypot(it.x - origin.x, it.z - origin.z) : 0;
+    setFocusHidden(it, hide, anim, !hide && origin ? Math.min(900, d * 110) : 0);
+  }
+  refreshPickables(); shadowDirty = true; lightsDirty = true; invalidate();
+}
+// rooms outside the focus get a dark veil over their floor; the floor materials (and their colours) stay untouched
+const dimVeils = {};
+function dimFloors() {
+  for (const r of ROOMS) {
+    let v = dimVeils[r.id];
+    if (!v) {
+      const mat = new T.MeshBasicMaterial({ color: 0x0b1216, transparent: true, opacity: 0, depthWrite: false });
+      v = dimVeils[r.id] = { mat, meshes: r.rects.map(([x1, x2, z1, z2]) => {
+        const m = new T.Mesh(new T.PlaneGeometry(x2 - x1, z2 - z1), mat);
+        m.rotation.x = -HP; m.position.set((x1 + x2) / 2, .03, (z1 + z2) / 2); m.visible = false; m.renderOrder = 2;
+        scene.add(m); reflHide.push(m);
+        return m;
+      }) };
+    }
+    const from = v.mat.opacity, to = focus && r.id !== focus.room ? .42 : 0;
+    if (from === to) continue;
+    v.meshes.forEach((m) => { m.visible = true; });
+    tween(500, (k) => { v.mat.opacity = from + (to - from) * k; }, EASE.out, () => { if (!to) v.meshes.forEach((m) => { m.visible = false; }); });
+  }
+}
+let pendingFocus = null;
+function enterFocus(id) {
+  if (!ROOM[id]) return;
+  // during the demo: let it wind down and put the flat back first, then open the room
+  if (demoActive) { pendingFocus = id; stopDemo(); return; }
+  closeSheet();
+  if (selected && itemRoom(selected) !== id) deselect();
+  if (!focus) focus = { room: id, prevCat: catActive };
+  else focus.room = id;
+  const r = ROOM[id], v = FOCUS_VIEW[id] || { yaw: want.yaw, pitch: .9 };
+  focus.maxDist = roomFitDistance(r, v.yaw, v.pitch) * 1.6;
+  catActive = ROOM_CAT[id] || catActive;
+  document.body.classList.add('focus');
+  $('#focusName').textContent = r.name;
+  updateFocusPrice();
+  applyFocusVisibility(true);
+  dimFloors();
+  flyTo({ tx: r.cx, tz: r.cz, yaw: v.yaw, pitch: v.pitch, dist: roomFitDistance(r, v.yaw, v.pitch) }, 950);
+  estScope = 'room';
+  invalidate();
+}
+function exitFocus(anim = true) {
+  if (!focus) return;
+  const r = ROOM[focus.room], prev = focus;
+  focus = null;
+  document.body.classList.remove('focus');
+  catActive = prev.prevCat;
+  applyFocusVisibility(anim, { x: r.cx, z: r.cz });
+  dimFloors();
+  if (anim) flyTo({ tx: CX, tz: CZ, dist: fitDistance(), pitch: Math.max(.9, want.pitch) }, 1150);
+  estScope = 'flat';
+  if (sheetOpen && activeTab === 'view') renderMinimap();
+  invalidate();
+}
+$('#focusExit').addEventListener('click', () => exitFocus());
+$('#focusPrice').addEventListener('click', () => { estScope = 'room'; openTab('estimate'); });
+
+/* ------------------------------------------------------------------ estimate: what the redesign costs in Moscow */
+const EST_CATS = [
+  { id: 'furniture', name: 'Мебель и техника', ico: 'i-sofa', c: '#c9a77c' },
+  { id: 'walls', name: 'Стены', ico: 'i-roller', c: '#7fa3b8' },
+  { id: 'floor', name: 'Пол', ico: 'i-floor', c: '#a57c55' },
+  { id: 'ceiling', name: 'Потолок', ico: 'i-ceil', c: '#b9c7cc' },
+  { id: 'electric', name: 'Электрика и свет', ico: 'i-plug', c: '#d6b25e' },
+  { id: 'plumbing', name: 'Сантехника', ico: 'i-drop', c: '#6fb3bd' },
+  { id: 'other', name: 'Прочие работы', ico: 'i-tools', c: '#9fae94' },
+];
+const ELEC_BASE = { hall: 3, living: 6, bed1: 5, kitchen: 8, bath: 3, bed2: 6, balcony: 1 };
+const PLUMB_TYPES = new Set(['bathtub', 'toilet', 'bathSink', 'washer', 'showerCabin', 'kSink']);
+let estScope = 'flat', estRoom = null, estCat = null, estDirtyT = 0;
+function wallAreaByFinish(room) {
+  const out = {};
+  for (const seg of segs) for (const p of seg.pieces) {
+    if (p.side === undefined || seg.sides[p.side] !== room) continue;
+    const f = wallStyle(seg.key + '|' + p.side).f;
+    out[f] = (out[f] || 0) + p.len * (p.y1 - p.y0);
+  }
+  return out;
+}
+const FIN_NAME = (id) => (FINISHES.find((f) => f.id === id) || { name: id }).name;
+const FLOOR_NAME = (id) => (FLOORS.find((f) => f.id === id) || { name: id }).name;
+let defCache = null;
+function estimateRoom(id, tier, mode) {
+  const pr = PRICES, L = pr.labor || {};
+  const lab = (k) => P(L[k], tier);
+  const cats = {}, lines = {};
+  for (const c of EST_CATS) { cats[c.id] = 0; lines[c.id] = []; }
+  const add = (cat, name, detail, sum) => { if (sum > 0) { cats[cat] += sum; lines[cat].push({ name, detail, sum }); } };
+  if (!defCache) defCache = defaultState();
+  const def = defCache, defIds = new Set(def.items.map((i) => i.uid)), defRoom = def.rooms[id] || {};
+  const full = mode === 'full';
+  const rs = state.rooms[id], r = ROOM[id], area = r.area;
+  let unpriced = 0;
+  // furniture: new pieces only in "changes" mode
+  const mine = items.filter((it) => !it.dying && itemRoom(it) === id && (full || !defIds.has(it.uid)));
+  let furnSum = 0;
+  const groups = {};
+  for (const it of mine) {
+    const v = P(pr.furniture[it.type], tier);
+    if (!v) { unpriced++; continue; }
+    const g = groups[it.type] || (groups[it.type] = { n: 0, v });
+    g.n++;
+    furnSum += v;
+  }
+  for (const [type, g] of Object.entries(groups)) add('furniture', DEFS[type].name, g.n > 1 ? `${g.n} × ${fmtRub(g.v)}` : '', g.n * g.v);
+  // walls
+  const overrides = Object.keys(state.walls).some((k) => wallMats[k] && wallMats[k].room === id);
+  const wallsChanged = full || overrides || rs.wall !== defRoom.wall || rs.finish !== defRoom.finish;
+  if (wallsChanged) {
+    const byF = wallAreaByFinish(id);
+    let wallArea = 0;
+    for (const [f, a] of Object.entries(byF)) {
+      const w = pr.walls[f] || {};
+      wallArea += a;
+      const mat = P(w.material, tier) * 1.07, work = P(w.labor, tier);
+      if (!mat && !work) unpriced++;
+      add('walls', FIN_NAME(f), `${a.toFixed(1)} м² × ${fmtRub(mat + work)}`, a * (mat + work));
+    }
+    add('walls', 'Подготовка стен', `${wallArea.toFixed(1)} м² × ${fmtRub(lab('wallPrep'))}`, wallArea * lab('wallPrep'));
+    add('ceiling', 'Натяжной потолок', `${area.toFixed(1)} м² × ${fmtRub(lab('ceiling'))}`, area * lab('ceiling'));
+  }
+  // floor
+  const floorChanged = full || rs.floor !== defRoom.floor;
+  if (floorChanged) {
+    const f = pr.floors[rs.floor] || {}, mat = P(f.material, tier) * 1.07, work = P(f.labor, tier);
+    if (!mat && !work) unpriced++;
+    add('floor', FLOOR_NAME(rs.floor), `${area.toFixed(1)} м² × ${fmtRub(mat + work)}`, area * (mat + work));
+    add('floor', 'Стяжка', `${area.toFixed(1)} м² × ${fmtRub(lab('floorScreed'))}`, area * lab('floorScreed'));
+  }
+  if (floorChanged || wallsChanged) add('other', 'Демонтаж', `${area.toFixed(1)} м² × ${fmtRub(lab('demolition'))}`, area * lab('demolition'));
+  // electrics and plumbing
+  const lamps = mine.filter((it) => it.def.light && it.type !== 'candles').length;
+  const points = lamps + (full ? (ELEC_BASE[id] || 0) : 0);
+  add('electric', 'Электроточки', `${points} × ${fmtRub(lab('electricPoint'))}`, points * lab('electricPoint'));
+  add('electric', 'Монтаж светильников', `${lamps} × ${fmtRub(lab('lightInstall'))}`, lamps * lab('lightInstall'));
+  const plumb = mine.filter((it) => PLUMB_TYPES.has(it.type)).length;
+  add('plumbing', 'Сантехточки и подключение', `${plumb} × ${fmtRub(lab('plumbingPoint'))}`, plumb * lab('plumbingPoint'));
+  if (full) {
+    const doors = OPENINGS.filter((o) => o.into === id && /door/.test(o.type)).length;
+    add('other', 'Межкомнатные двери', `${doors} × ${fmtRub(lab('doorInstall'))}`, doors * lab('doorInstall'));
+  }
+  add('other', 'Сборка мебели', `${P(L.furnitureAssembly, tier)}% от ${fmtRub(furnSum)}`, furnSum * P(L.furnitureAssembly, tier) / 100);
+  const total = Object.values(cats).reduce((a, b) => a + b, 0);
+  return { cats, lines, total, unpriced };
+}
+function estimate(scope, tier, mode) {
+  const ids = scope === 'flat' ? ROOMS.map((r) => r.id) : [scope];
+  const out = { cats: {}, lines: {}, total: 0, unpriced: 0, rooms: {} };
+  for (const c of EST_CATS) { out.cats[c.id] = 0; out.lines[c.id] = []; }
+  for (const id of ids) {
+    const e = estimateRoom(id, tier, mode);
+    out.rooms[id] = e.total; out.total += e.total; out.unpriced += e.unpriced;
+    for (const c of EST_CATS) {
+      out.cats[c.id] += e.cats[c.id];
+      for (const l of e.lines[c.id]) out.lines[c.id].push(scope === 'flat' ? { ...l, name: ROOM[id].name + ' · ' + l.name } : l);
+    }
+  }
+  if (out.total > 0) {
+    const dl = P((PRICES.labor || {}).delivery, tier);
+    if (dl) { out.cats.other += dl; out.lines.other.push({ name: 'Доставка', detail: '', sum: dl }); out.total += dl; }
+  }
+  return out;
+}
+function estRoomId() {
+  if (focus) return focus.room;
+  if (estRoom) return estRoom;
+  return roomAt(cam.tx, cam.tz) || 'living';
+}
+function updateFocusPrice() {
+  if (!focus) return;
+  const e = estimate(focus.room, settings.tier, settings.estMode);
+  $('#focusPrice').textContent = fmtShort(e.total);
+}
+function estChanged() {
+  clearTimeout(estDirtyT);
+  estDirtyT = setTimeout(() => { updateFocusPrice(); if (sheetOpen && activeTab === 'estimate') renderEstimate(); }, 120);
+}
+function renderEstimate() {
+  const tier = settings.tier, mode = settings.estMode;
+  const scope = estScope === 'flat' ? 'flat' : estRoomId();
+  setSeg($('#estScope'), $(`#estScope [data-v="${estScope === 'flat' ? 'flat' : 'room'}"]`));
+  setSeg($('#estMode'), $(`#estMode [data-v="${mode}"]`));
+  setSeg($('#estTier'), $(`#estTier [data-v="${tier}"]`));
+  const e = estimate(scope, tier, mode);
+  const lo = estimate(scope, 'low', mode).total, hi = estimate(scope, 'high', mode).total;
+  $('#estScopeName').textContent = (scope === 'flat' ? 'Вся квартира' : ROOM[scope].name) + ' · ' + (mode === 'delta' ? 'изменения' : 'ремонт с нуля');
+  const tot = $('#estTotal'), from = +(tot.dataset.v || 0), to = e.total;
+  tot.dataset.v = to;
+  tween(650, (k) => { tot.textContent = fmtRub(from + (to - from) * k); }, EASE.out);
+  $('#estRange').textContent = to > 0 ? `${fmtShort(lo)} – ${fmtShort(hi)}` : (mode === 'delta' ? 'Пока ничего не изменено' : '');
+  // donut
+  const svg = $('#estDonut'), C = 2 * PI * 46;
+  let acc = 0, html = `<circle cx="60" cy="60" r="46" style="stroke:var(--chip-hover)"/>`;
+  const cats = EST_CATS.filter((c) => e.cats[c.id] > 0);
+  for (const c of cats) {
+    const frac = e.cats[c.id] / (e.total || 1), len = Math.max(0, frac * C - 2);
+    html += `<circle cx="60" cy="60" r="46" transform="rotate(-90 60 60)" style="stroke:${c.c};opacity:${estCat && estCat !== c.id ? .35 : 1}" stroke-dasharray="${len.toFixed(1)} ${(C - len).toFixed(1)}" stroke-dashoffset="${(-acc * C).toFixed(1)}"/>`;
+    acc += frac;
+  }
+  const big = cats.slice().sort((a, b) => e.cats[b.id] - e.cats[a.id])[0];
+  if (big) html += `<use href="#${(estCat ? EST_CATS.find((c) => c.id === estCat) : big).ico}" x="44" y="44" width="32" height="32" class="ico ctr" style="fill:none;stroke:var(--ink-2)"/>`;
+  svg.innerHTML = html;
+  // legend chips
+  const leg = $('#estLegend'); leg.innerHTML = '';
+  for (const c of cats) {
+    const b = document.createElement('button');
+    b.className = 'cchip' + (estCat === c.id ? ' on' : '');
+    b.style.background = c.c + '2b'; b.style.color = 'var(--ink)';
+    b.setAttribute('aria-label', c.name); b.title = c.name;
+    b.innerHTML = `<svg class="ico" style="color:${c.c}"><use href="#${c.ico}"/></svg>${fmtShort(e.cats[c.id])}`;
+    b.addEventListener('click', () => { estCat = estCat === c.id ? null : c.id; renderEstimate(); });
+    leg.appendChild(b);
+  }
+  // detail lines for the chosen category
+  const ln = $('#estLines'); ln.innerHTML = '';
+  if (estCat && e.lines[estCat]) {
+    e.lines[estCat].slice().sort((a, b) => b.sum - a.sum).forEach((l, i) => {
+      const d = document.createElement('div'); d.className = 'eline'; d.style.animationDelay = (i * 25) + 'ms';
+      d.innerHTML = `<b></b><em>${fmtRub(l.sum)}</em><span></span>`;
+      d.querySelector('b').textContent = l.name; d.querySelector('span').textContent = l.detail;
+      ln.appendChild(d);
+    });
+  }
+  // per-room bars in the whole-flat view
+  const rb = $('#estRooms'); rb.innerHTML = '';
+  if (scope === 'flat' && e.total > 0) {
+    const max = Math.max(...Object.values(e.rooms));
+    for (const r of ROOMS) {
+      const v = e.rooms[r.id]; if (!v) continue;
+      const b = document.createElement('button'); b.className = 'rbar';
+      b.innerHTML = `<span></span><i style="width:${(v / max * 100).toFixed(1)}%;background:${state.rooms[r.id].wall}"></i><em>${fmtShort(v)}</em>`;
+      b.querySelector('span').textContent = r.name;
+      b.addEventListener('click', () => { estScope = 'room'; estRoom = r.id; renderEstimate(); });
+      rb.appendChild(b);
+    }
+  }
+  updateFocusPrice();
+  $('#estNote').textContent = (e.unpriced ? `Без цены: ${e.unpriced} поз. · ` : '') + `Цены Москвы, ${PRICES.asOf || '2026'}: ориентир, не оферта`;
+}
+$$('#estScope button').forEach((b) => b.addEventListener('click', () => { estScope = b.dataset.v === 'flat' ? 'flat' : 'room'; if (estScope === 'flat') estRoom = null; renderEstimate(); }));
+$$('#estMode button').forEach((b) => b.addEventListener('click', () => { settings.estMode = b.dataset.v; store.set(KEY + ':settings', JSON.stringify(settings)); renderEstimate(); updateFocusPrice(); }));
+$$('#estTier button').forEach((b) => b.addEventListener('click', () => {
+  settings.tier = b.dataset.v; store.set(KEY + ':settings', JSON.stringify(settings));
+  renderEstimate(); updateFocusPrice(); if (selected) updateSelbar();
+}));
+
 /* ------------------------------------------------------------------ demo tour: a flying camera shows the main features, then everything is put back */
 let demoActive = false, demoToken = 0, demoTimer = 0, demoWake = null, autoDemoTimer = 0;
 function cancelAutoDemo() { if (autoDemoTimer) { clearTimeout(autoDemoTimer); autoDemoTimer = 0; } }
@@ -3501,6 +3906,7 @@ function stopDemo() {
 }
 async function runDemo() {
   if (demoActive) return;
+  if (focus) exitFocus(false);
   demoActive = true; const tok = ++demoToken;
   const alive = () => demoActive && demoToken === tok;
   const step = async (ms) => { await dwait(ms); return alive(); };
@@ -3552,7 +3958,7 @@ async function runDemo() {
       if (selected) deselect();
       applySnapshot(JSON.parse(snap), true);
       goTime(tod0, true);
-      fitAll();
+      if (pendingFocus) { const id = pendingFocus; pendingFocus = null; enterFocus(id); } else if (!focus) fitAll();
       if (!store.get(KEY + ':hello')) setTimeout(() => $('#hello').classList.add('show'), 700);
     }
   }
@@ -3576,7 +3982,7 @@ resize();
 
 try {
   const st = JSON.parse(store.get(KEY + ':settings') || 'null');
-  if (st) for (const k of Object.keys(settings)) if (typeof st[k] === 'boolean') settings[k] = st[k];
+  if (st) for (const k of Object.keys(settings)) if (typeof st[k] === typeof settings[k]) settings[k] = st[k];
 } catch (e) { /* defaults */ }
 $('#tgLabels').classList.toggle('on', settings.labels);
 $('#tgSnap').classList.toggle('on', settings.snap);
@@ -3676,7 +4082,7 @@ boot().catch((e) => {
 });
 $('#helloGo').addEventListener('click', () => { $('#hello').classList.remove('show'); store.set(KEY + ':hello', '1'); });
 
-window.__apt = { renderer, runDemo, stopDemo, demo: () => demoActive, applyWalls, waves, setTime: (t) => { tod = t; applyTime(); }, items, segs, cam, want, state: () => state, select, openTab, DEFS, invalidate, collides, wallRects, beginDrag, dragMove, endDrag, groundAt, camera };
+window.__apt = { enterFocus, exitFocus, focus: () => focus, estimate, itemRoom, pickItem, addItem, PRICES, fmtRub, fmtShort, renderer, runDemo, stopDemo, demo: () => demoActive, applyWalls, waves, setTime: (t) => { tod = t; applyTime(); }, items, segs, cam, want, state: () => state, select, openTab, DEFS, invalidate, collides, wallRects, beginDrag, dragMove, endDrag, groundAt, camera };
 })();
 </script>
 </body>
